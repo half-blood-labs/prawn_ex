@@ -94,4 +94,16 @@ defmodule PrawnEx do
   """
   @spec fill(Document.t()) :: Document.t()
   def fill(doc), do: Document.append_op(doc, :fill)
+
+  @doc """
+  Sets the non-stroking (fill and text) color to gray. `g` in 0..1 (0=black, 1=white).
+  """
+  @spec set_non_stroking_gray(Document.t(), number()) :: Document.t()
+  def set_non_stroking_gray(doc, g), do: Document.append_op(doc, {:set_non_stroking_gray, g})
+
+  @doc """
+  Sets the stroking (lines, borders) color to gray. `g` in 0..1.
+  """
+  @spec set_stroking_gray(Document.t(), number()) :: Document.t()
+  def set_stroking_gray(doc, g), do: Document.append_op(doc, {:set_stroking_gray, g})
 end

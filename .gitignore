@@ -25,5 +25,8 @@ prawn_ex-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
+# Generated demo PDFs
+/output/
+
 # Local plan (do not commit)
 /PLAN.md

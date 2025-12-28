@@ -38,7 +38,10 @@ defmodule PrawnEx.PDF.ContentStream do
     # Tm: a b c d e f = text matrix; 1 0 0 1 x y = translate to (x,y)
     line =
       "BT\n1 0 0 1 " <>
-        Encoder.number(x) <> " " <> Encoder.number(y) <> " Tm\n" <>
+        Encoder.number(x) <>
+        " " <>
+        Encoder.number(y) <>
+        " Tm\n" <>
         Encoder.literal_string(s) <> " Tj\nET\n"
 
     {acc <> line, font_map}
@@ -47,7 +50,10 @@ defmodule PrawnEx.PDF.ContentStream do
   defp emit_op({:line, {x1, y1}, {x2, y2}}, {acc, font_map}) do
     # m = move to, l = line to, S = stroke
     line =
-      Encoder.number(x1) <> " " <> Encoder.number(y1) <> " m\n" <>
+      Encoder.number(x1) <>
+        " " <>
+        Encoder.number(y1) <>
+        " m\n" <>
         Encoder.number(x2) <> " " <> Encoder.number(y2) <> " l S\n"
 
     {acc <> line, font_map}
@@ -56,7 +62,10 @@ defmodule PrawnEx.PDF.ContentStream do
   defp emit_op({:rectangle, x, y, w, h}, {acc, font_map}) do
     # re = rectangle (x y width height); path not drawn until S or f
     line =
-      Encoder.number(x) <> " " <> Encoder.number(y) <> " " <>
+      Encoder.number(x) <>
+        " " <>
+        Encoder.number(y) <>
+        " " <>
         Encoder.number(w) <> " " <> Encoder.number(h) <> " re\n"
 
     {acc <> line, font_map}
@@ -68,5 +77,13 @@ defmodule PrawnEx.PDF.ContentStream do
 
   defp emit_op(:fill, {acc, font_map}) do
     {acc <> "f\n", font_map}
+  end
+
+  defp emit_op({:set_non_stroking_gray, g}, {acc, font_map}) do
+    {acc <> Encoder.number(g) <> " g\n", font_map}
+  end
+
+  defp emit_op({:set_stroking_gray, g}, {acc, font_map}) do
+    {acc <> Encoder.number(g) <> " G\n", font_map}
   end
 end

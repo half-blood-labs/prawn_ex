@@ -3,14 +3,15 @@ defmodule PrawnEx.Page do
   Represents a single PDF page with a list of content operations.
 
   Content ops are stored in order and emitted by the PDF writer.
-  Supported ops (for Phase 1):
+  Supported ops:
   - `{:set_font, font_name, size}`
   - `{:text, string}`
   - `{:text_at, {x, y}, string}`
   - `{:line, {x1, y1}, {x2, y2}}`
   - `{:rectangle, x, y, width, height}`
-  - `:stroke`
-  - `:fill`
+  - `:stroke`, `:fill`
+  - `{:set_non_stroking_gray, g}` (fill and text)
+  - `{:set_stroking_gray, g}` (lines and strokes)
   """
 
   defstruct [:content_ops]
@@ -23,6 +24,8 @@ defmodule PrawnEx.Page do
           | {:rectangle, number(), number(), number(), number()}
           | :stroke
           | :fill
+          | {:set_non_stroking_gray, number()}
+          | {:set_stroking_gray, number()}
 
   @type t :: %__MODULE__{content_ops: [content_op()]}
 
