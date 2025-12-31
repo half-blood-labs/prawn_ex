@@ -73,4 +73,21 @@ defmodule PrawnEx.Document do
     new_pages = List.replace_at(pages, idx, updated_page)
     %{doc | pages: new_pages}
   end
+
+  @doc """
+  Injects ops at the start and/or end of a page's content. Used for headers/footers.
+
+  `page_index` is 0-based. Returns the document with that page's content_ops
+  set to `prepend_ops ++ current_ops ++ append_ops`.
+  """
+  @spec inject_page_ops(t(), non_neg_integer(), [PrawnEx.Page.content_op()], [
+          PrawnEx.Page.content_op()
+        ]) :: t()
+  def inject_page_ops(doc, page_index, prepend_ops, append_ops) do
+    page = Enum.at(doc.pages, page_index)
+    new_ops = prepend_ops ++ page.content_ops ++ append_ops
+    updated_page = %{page | content_ops: new_ops}
+    new_pages = List.replace_at(doc.pages, page_index, updated_page)
+    %{doc | pages: new_pages}
+  end
 end

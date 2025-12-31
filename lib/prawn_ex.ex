@@ -23,12 +23,21 @@ defmodule PrawnEx do
   @doc """
   Builds a PDF by running the function on a new document, then writes to the given path.
 
+  Options (when passing a keyword list as second argument):
+  - `:header` - `fn(doc, page_number) -> doc` — add ops at top of each page (e.g. title, line)
+  - `:footer` - `fn(doc, page_number) -> doc` — add ops at bottom of each page (e.g. "Page N")
+
   Returns `:ok` or `{:error, reason}`.
   """
   @spec build(String.t(), (Document.t() -> Document.t())) :: :ok | {:error, term()}
-  def build(path, fun) do
-    doc = Document.new() |> fun.()
+  @spec build(String.t(), keyword(), (Document.t() -> Document.t())) :: :ok | {:error, term()}
+  def build(path, opts, fun) when is_list(opts) and is_function(fun, 1) do
+    doc = Document.new() |> fun.() |> inject_headers_footers(opts)
     write_to_file(doc, path)
+  end
+
+  def build(path, fun) when is_function(fun, 1) do
+    build(path, [], fun)
   end
 
   @doc """
@@ -106,4 +115,56 @@ defmodule PrawnEx do
   """
   @spec set_stroking_gray(Document.t(), number()) :: Document.t()
   def set_stroking_gray(doc, g), do: Document.append_op(doc, {:set_stroking_gray, g})
+
+  @doc """
+  Draws a table at the given position. `rows` is a list of rows (list of cell values).
+  First row can be styled as header with `header: true` (default).
+
+  ## Options
+
+  - `:at` - `{x, y}` top-left of table (default `{50, 750}`)
+  - `:column_widths` - list of pt widths or `:auto`
+  - `:row_height`, `:cell_padding`, `:header`, `:border`, `:font_size`, `:header_font_size`
+
+  ## Example
+
+      PrawnEx.table(doc, [["Name", "Score"], ["Alice", "95"], ["Bob", "87"]],
+        at: {50, 650}, column_widths: [200, 80])
+  """
+  @spec table(Document.t(), [list()], keyword()) :: Document.t()
+  def table(doc, rows, opts \\ []) do
+    doc = ensure_current_page(doc)
+    opts = Keyword.put_new(opts, :at, {50, 750})
+    opts = Keyword.put(opts, :page_size, doc.opts[:page_size] || :a4)
+    PrawnEx.Table.layout(doc, rows, opts)
+  end
+
+  defp ensure_current_page(%Document{pages: []} = doc), do: Document.add_page(doc)
+  defp ensure_current_page(doc), do: doc
+
+  defp inject_headers_footers(doc, opts) do
+    header_cb = Keyword.get(opts, :header)
+    footer_cb = Keyword.get(opts, :footer)
+    if header_cb == nil and footer_cb == nil, do: doc, else: do_inject(doc, header_cb, footer_cb)
+  end
+
+  defp do_inject(doc, header_cb, footer_cb) do
+    Enum.with_index(doc.pages)
+    |> Enum.reduce(doc, fn {_page, i}, acc ->
+      page_num = i + 1
+      header_ops = if header_cb, do: ops_from_callback(header_cb, acc, page_num), else: []
+      footer_ops = if footer_cb, do: ops_from_callback(footer_cb, acc, page_num), else: []
+      Document.inject_page_ops(acc, i, header_ops, footer_ops)
+    end)
+  end
+
+  defp ops_from_callback(cb, doc, page_num) do
+    # Run callback with a doc that has one empty page; it adds header/footer ops
+    blank = Document.new(doc.opts) |> Document.add_page()
+    result = cb.(blank, page_num)
+    case Document.current_page(result) do
+      nil -> []
+      page -> page.content_ops
+    end
+  end
 end
