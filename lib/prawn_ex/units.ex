@@ -57,7 +57,8 @@ defmodule PrawnEx.Units do
       iex> PrawnEx.Units.page_size({:a4, :landscape})
       {842, 595}
   """
-  @spec page_size(:a3 | :a4 | :a5 | :letter | :legal | {atom(), :landscape}) :: {number(), number()}
+  @spec page_size(:a3 | :a4 | :a5 | :letter | :legal | {atom(), :landscape}) ::
+          {number(), number()}
   def page_size(:a4), do: {595, 842}
   def page_size(:a3), do: {841, 1190}
   def page_size(:a5), do: {420, 595}

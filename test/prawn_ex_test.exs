@@ -50,24 +50,28 @@ defmodule PrawnExTest do
       Path.join(System.tmp_dir!(), "prawn_ex_test_#{:erlang.unique_integer([:positive])}.pdf")
 
     assert :ok =
-             PrawnEx.build(path, [
-               header: fn doc, n ->
+             PrawnEx.build(
+               path,
+               [
+                 header: fn doc, n ->
+                   doc
+                   |> PrawnEx.set_font("Helvetica", 9)
+                   |> PrawnEx.text_at({50, 820}, "Header Page #{n}")
+                 end,
+                 footer: fn doc, n ->
+                   doc
+                   |> PrawnEx.set_font("Helvetica", 9)
+                   |> PrawnEx.text_at({50, 30}, "Page #{n}")
+                 end
+               ],
+               fn doc ->
                  doc
-                 |> PrawnEx.set_font("Helvetica", 9)
-                 |> PrawnEx.text_at({50, 820}, "Header Page #{n}")
-               end,
-               footer: fn doc, n ->
-                 doc
-                 |> PrawnEx.set_font("Helvetica", 9)
-                 |> PrawnEx.text_at({50, 30}, "Page #{n}")
+                 |> PrawnEx.add_page()
+                 |> PrawnEx.text_at({50, 400}, "Page 1 body")
+                 |> PrawnEx.add_page()
+                 |> PrawnEx.text_at({50, 400}, "Page 2 body")
                end
-             ], fn doc ->
-               doc
-               |> PrawnEx.add_page()
-               |> PrawnEx.text_at({50, 400}, "Page 1 body")
-               |> PrawnEx.add_page()
-               |> PrawnEx.text_at({50, 400}, "Page 2 body")
-             end)
+             )
 
     bin = File.read!(path)
     assert bin =~ "Header Page 1"
@@ -79,6 +83,7 @@ defmodule PrawnExTest do
 
   test "table/3 draws table with header row" do
     rows = [["A", "B"], ["1", "2"], ["3", "4"]]
+
     binary =
       PrawnEx.Document.new(page_size: :a4)
       |> PrawnEx.add_page()
@@ -90,5 +95,35 @@ defmodule PrawnExTest do
     assert binary =~ "B"
     assert binary =~ "1"
     assert binary =~ "2"
+  end
+
+  test "bar_chart/3 draws bars and labels" do
+    data = [{"Jan", 40}, {"Feb", 55}, {"Mar", 70}]
+
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.bar_chart(data, at: {80, 500}, width: 300, height: 150)
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    assert binary =~ "Jan"
+    assert binary =~ "Feb"
+    assert binary =~ "Mar"
+  end
+
+  test "line_chart/3 draws polyline" do
+    data = [10, 25, 15, 40, 35]
+
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.line_chart(data, at: {80, 500}, width: 300, height: 150)
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    # Content stream should have m (move) and l (line to) for the path
+    assert binary =~ " m\n"
+    assert binary =~ " l\n"
   end
 end

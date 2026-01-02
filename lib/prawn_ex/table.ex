@@ -68,6 +68,7 @@ defmodule PrawnEx.Table do
         margin = 50 * 2
         width = (page_w - margin) / n_cols
         List.duplicate(width, n_cols)
+
       widths when is_list(widths) ->
         widths
     end
@@ -102,6 +103,7 @@ defmodule PrawnEx.Table do
       if is_header do
         # Header background
         total_w = Enum.sum(col_widths)
+
         doc
         |> Document.append_op({:set_non_stroking_gray, 0.9})
         |> Document.append_op({:rectangle, x_start, y_bottom, total_w, row_height})

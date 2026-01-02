@@ -56,6 +56,21 @@ PrawnEx.build("out.pdf", [
 end)
 ```
 
+### Charts
+
+Bar and line charts (Phase 3), built from drawing primitives:
+
+```elixir
+# Bar chart: list of {label, value}
+PrawnEx.bar_chart(doc, [{"Jan", 40}, {"Feb", 55}, {"Mar", 70}],
+  at: {50, 500}, width: 400, height: 200, bar_color: 0.4)
+
+# Line chart: list of y-values (x = index) or [{x, y}, ...]
+PrawnEx.line_chart(doc, [10, 25, 15, 40, 35], at: {50, 400}, width: 400, height: 150)
+```
+
+Options: `:at`, `:width`, `:height`, `:bar_color` / `:stroke_color`, `:axis`, `:labels`, `:padding`.
+
 ### Colors
 
 Use gray for strokes and fill/text: `PrawnEx.set_stroking_gray(doc, 0.8)`, `PrawnEx.set_non_stroking_gray(doc, 0.2)` (0 = black, 1 = white).

@@ -51,5 +51,5 @@ defmodule PrawnEx.PDF.Encoder do
   """
   @spec number(number()) :: String.t()
   def number(n) when is_integer(n), do: Integer.to_string(n)
-  def number(n) when is_float(n), do: :erlang.float_to_binary(n, [decimals: 4])
+  def number(n) when is_float(n), do: :erlang.float_to_binary(n, decimals: 4)
 end

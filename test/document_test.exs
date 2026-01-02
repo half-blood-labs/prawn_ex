@@ -46,6 +46,7 @@ defmodule PrawnEx.DocumentTest do
         |> PrawnEx.Document.append_op({:text, "Hello"})
 
       assert length(doc.pages) == 1
+
       assert hd(doc.pages).content_ops == [
                {:set_font, "Helvetica", 12},
                {:text, "Hello"}

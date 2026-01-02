@@ -45,6 +45,7 @@ defmodule PrawnEx.PDF.Writer do
     Enum.map(ids, fn id ->
       pattern = "#{id} 0 obj"
       pos = :binary.match(body, pattern)
+
       case pos do
         {start, _} -> {id, base + start}
         :nomatch -> {id, base}
@@ -81,6 +82,7 @@ defmodule PrawnEx.PDF.Writer do
     sorted = Enum.sort_by(offsets, fn {id, _} -> id end)
     n = length(offsets) + 1
     header = "xref\n0 #{n}\n0000000000 65535 f \n"
+
     lines =
       Enum.map(sorted, fn {_id, pos} ->
         offset_str = String.pad_leading(Integer.to_string(pos), 10, "0")

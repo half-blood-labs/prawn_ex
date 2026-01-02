@@ -1,5 +1,5 @@
 # Run with: mix run scripts/gen_demo.exs
-# Writes a beautiful demo PDF (2 pages: hero + table) to project's output/ folder.
+# Writes a beautiful demo PDF (3 pages: hero, table, charts) to project's output/ folder.
 
 output_dir = Path.join(File.cwd!(), "output")
 File.mkdir_p!(output_dir)
@@ -90,7 +90,7 @@ footer_y = 48
         ["Feature", "Status", "Notes"],
         ["Tables", "Done", "Header row, borders, column_widths"],
         ["Headers / footers", "Done", "Per-page callback, page number"],
-        ["Charts", "Planned", "Phase 3"],
+        ["Charts", "Done", "Bar & line charts (Phase 3)"],
         ["Images", "Planned", "Phase 3"]
       ],
       at: {margin, page_h - 130},
@@ -98,6 +98,35 @@ footer_y = 48
       row_height: 26,
       header: true,
       cell_padding: 8
+    )
+    # —— Page 3: Charts ——
+    |> PrawnEx.add_page()
+    |> PrawnEx.set_font("Helvetica", 18)
+    |> PrawnEx.text_at({margin, page_h - 60}, "Charts (Phase 3)")
+    |> PrawnEx.set_font("Helvetica", 10)
+    |> PrawnEx.set_non_stroking_gray(0.5)
+    |> PrawnEx.text_at({margin, page_h - 85}, "Bar and line charts from drawing primitives — no external deps")
+    |> PrawnEx.set_non_stroking_gray(0)
+    |> PrawnEx.set_font("Helvetica", 11)
+    |> PrawnEx.text_at({margin, page_h - 115}, "Bar chart")
+    |> PrawnEx.bar_chart(
+      [{"Q1", 42}, {"Q2", 68}, {"Q3", 55}, {"Q4", 90}],
+      at: {margin, page_h - 320},
+      width: page_w - 2 * margin,
+      height: 180,
+      bar_color: 0.45,
+      labels: true,
+      axis: true
+    )
+    |> PrawnEx.set_font("Helvetica", 11)
+    |> PrawnEx.text_at({margin, page_h - 360}, "Line chart")
+    |> PrawnEx.line_chart(
+      [12, 28, 22, 45, 38, 52, 48],
+      at: {margin, page_h - 550},
+      width: page_w - 2 * margin,
+      height: 160,
+      stroke_color: 0.2,
+      axis: true
     )
   end)
 

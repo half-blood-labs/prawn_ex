@@ -86,6 +86,18 @@ defmodule PrawnEx do
   def line(doc, from, to), do: Document.append_op(doc, {:line, from, to})
 
   @doc """
+  Moves the path to `{x, y}` without drawing. Use with `line_to/2` and then `stroke/1` for polylines.
+  """
+  @spec move_to(Document.t(), {number(), number()}) :: Document.t()
+  def move_to(doc, pos), do: Document.append_op(doc, {:move_to, pos})
+
+  @doc """
+  Draws a line from the current path point to `{x, y}`. Call `stroke/1` after the path is complete.
+  """
+  @spec line_to(Document.t(), {number(), number()}) :: Document.t()
+  def line_to(doc, pos), do: Document.append_op(doc, {:line_to, pos})
+
+  @doc """
   Adds a rectangle at `(x, y)` with `width` and `height`. Call `stroke/1` or `fill/1` to draw it.
   """
   @spec rectangle(Document.t(), number(), number(), number(), number()) :: Document.t()
@@ -115,6 +127,28 @@ defmodule PrawnEx do
   """
   @spec set_stroking_gray(Document.t(), number()) :: Document.t()
   def set_stroking_gray(doc, g), do: Document.append_op(doc, {:set_stroking_gray, g})
+
+  @doc """
+  Draws a bar chart. `data` is a list of `{label, value}` or `[label, value]`.
+  Options: `:at`, `:width`, `:height`, `:bar_color` (gray 0–1), `:axis`, `:labels`, `:label_font_size`, `:padding`.
+  """
+  @spec bar_chart(Document.t(), [{String.t(), number()} | [term()]], keyword()) :: Document.t()
+  def bar_chart(doc, data, opts \\ []) do
+    doc = ensure_current_page(doc)
+    opts = Keyword.put_new(opts, :at, {50, 600})
+    PrawnEx.Chart.bar_chart(doc, data, opts)
+  end
+
+  @doc """
+  Draws a line chart. `data` is a list of y-values (x = index) or `[{x, y}, ...]`.
+  Options: `:at`, `:width`, `:height`, `:stroke_color`, `:axis`, `:padding`.
+  """
+  @spec line_chart(Document.t(), [number()] | [{number(), number()}], keyword()) :: Document.t()
+  def line_chart(doc, data, opts \\ []) do
+    doc = ensure_current_page(doc)
+    opts = Keyword.put_new(opts, :at, {50, 600})
+    PrawnEx.Chart.line_chart(doc, data, opts)
+  end
 
   @doc """
   Draws a table at the given position. `rows` is a list of rows (list of cell values).
@@ -162,6 +196,7 @@ defmodule PrawnEx do
     # Run callback with a doc that has one empty page; it adds header/footer ops
     blank = Document.new(doc.opts) |> Document.add_page()
     result = cb.(blank, page_num)
+
     case Document.current_page(result) do
       nil -> []
       page -> page.content_ops

@@ -31,6 +31,7 @@ defmodule PrawnEx.PDF.Objects do
   """
   def page(parent_id, contents_id, media_box, resources) do
     {w, h} = media_box
+
     "<< /Type /Page /Parent #{parent_id} 0 R /MediaBox [ 0 0 #{w} #{h} ] /Contents #{contents_id} 0 R /Resources #{resources} >>"
   end
 

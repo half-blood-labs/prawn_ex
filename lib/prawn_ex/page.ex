@@ -8,6 +8,7 @@ defmodule PrawnEx.Page do
   - `{:text, string}`
   - `{:text_at, {x, y}, string}`
   - `{:line, {x1, y1}, {x2, y2}}`
+  - `{:move_to, {x, y}}`, `{:line_to, {x, y}}` (path building; then `stroke/1`)
   - `{:rectangle, x, y, width, height}`
   - `:stroke`, `:fill`
   - `{:set_non_stroking_gray, g}` (fill and text)
@@ -21,6 +22,8 @@ defmodule PrawnEx.Page do
           | {:text, String.t()}
           | {:text_at, {number(), number()}, String.t()}
           | {:line, {number(), number()}, {number(), number()}}
+          | {:move_to, {number(), number()}}
+          | {:line_to, {number(), number()}}
           | {:rectangle, number(), number(), number(), number()}
           | :stroke
           | :fill
