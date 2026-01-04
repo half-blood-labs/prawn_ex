@@ -44,6 +44,28 @@ defmodule PrawnEx.PDF.Objects do
   end
 
   @doc """
+  Resources dict with font and XObject refs. xobject_refs: [{"Im1", 7}] -> /Im1 7 0 R
+  """
+  def resources_font_and_xobject(font_name, xobject_refs) do
+    base = "/" <> font_name
+
+    xobj_part =
+      Enum.map(xobject_refs, fn {name, id} -> "/#{name} #{id} 0 R" end)
+      |> Enum.join(" ")
+
+    "<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont #{base} >> >> /XObject << #{xobj_part} >> >>"
+  end
+
+  @doc """
+  Image XObject: stream dict + data. filter: :dct for JPEG.
+  """
+  def image_xobject(width, height, data, filter: :dct) do
+    len = byte_size(data)
+
+    "<< /Type /XObject /Subtype /Image /Width #{width} /Height #{height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length #{len} >>\nstream\n#{data}\nendstream"
+  end
+
+  @doc """
   Stream object body: dictionary + stream data. Caller adds "n 0 obj\n" and "endobj".
   """
   def stream_dict_and_data(data) when is_binary(data) do

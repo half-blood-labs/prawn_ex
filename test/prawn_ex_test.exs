@@ -126,4 +126,25 @@ defmodule PrawnExTest do
     assert binary =~ " m\n"
     assert binary =~ " l\n"
   end
+
+  test "image/3 with nonexistent path returns error" do
+    assert {:error, _} = PrawnEx.image(PrawnEx.Document.new(), "/nonexistent.jpg", at: {0, 0})
+  end
+
+  test "image XObject is emitted when doc has image" do
+    spec = %{data: <<0xFF, 0xD8, 0xFF>>, width: 2, height: 2, filter: :dct}
+
+    doc =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> then(fn d ->
+        {d, id} = PrawnEx.Document.add_image(d, spec)
+        PrawnEx.Document.append_op(d, {:image, id, 50, 50, 20, 20})
+      end)
+
+    binary = PrawnEx.to_binary(doc)
+    assert binary =~ "%PDF-1.4"
+    assert binary =~ "/Subtype /Image"
+    assert binary =~ "/DCTDecode"
+  end
 end

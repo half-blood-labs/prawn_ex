@@ -71,9 +71,35 @@ PrawnEx.line_chart(doc, [10, 25, 15, 40, 35], at: {50, 400}, width: 400, height:
 
 Options: `:at`, `:width`, `:height`, `:bar_color` / `:stroke_color`, `:axis`, `:labels`, `:padding`.
 
+### Images
+
+Embed JPEG images (file path or binary). Optionally set `:width` and `:height` in pt; default is intrinsic size.
+
+**Image / asset path:** Set `config :prawn_ex, image_dir: "priv/images"` (or any directory) in your application config. Relative paths passed to `PrawnEx.image/3` are then resolved from that directory. Absolute paths and raw JPEG binaries are used as-is.
+
+```elixir
+# In your config/config.exs:
+config :prawn_ex, image_dir: "priv/images"
+
+# In your code — "photo.jpg" is loaded from priv/images/photo.jpg:
+doc
+|> PrawnEx.image("photo.jpg", at: {50, 400})
+|> PrawnEx.image("logo.jpg", at: {400, 700}, width: 80, height: 40)
+```
+
 ### Colors
 
 Use gray for strokes and fill/text: `PrawnEx.set_stroking_gray(doc, 0.8)`, `PrawnEx.set_non_stroking_gray(doc, 0.2)` (0 = black, 1 = white).
+
+## Demo
+
+Generate the demo PDF:
+
+```bash
+mix run scripts/gen_demo.exs
+```
+
+Output: `output/prawn_ex_demo.pdf` (4 pages: hero, table, charts, images). The image on page 4 uses `demo.jpg` resolved from the configured `image_dir` (default `"assets"`). Add `assets/demo.jpg` to show your own image, or set `config :prawn_ex, image_dir: "path/to/your/jpegs"` in `config/config.exs`.
 
 ## Installation
 

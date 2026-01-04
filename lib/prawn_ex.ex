@@ -4,6 +4,15 @@ defmodule PrawnEx do
 
   Pure Elixir, no Chrome or HTML. Build a document spec and emit PDF 1.4 binary.
 
+  ## Image / asset path
+
+  When using this library as a dependency, set in your application config:
+
+      config :prawn_ex, image_dir: "priv/images"
+
+  Relative paths passed to `image/3` (e.g. `"photo.jpg"`) are then resolved from that directory.
+  Absolute paths and raw JPEG binaries are used as-is.
+
   ## Example
 
       PrawnEx.build("out.pdf", fn doc ->
@@ -148,6 +157,53 @@ defmodule PrawnEx do
     doc = ensure_current_page(doc)
     opts = Keyword.put_new(opts, :at, {50, 600})
     PrawnEx.Chart.line_chart(doc, data, opts)
+  end
+
+  @doc """
+  Embeds an image (JPEG) at the given position. `path_or_binary` is a file path or JPEG binary.
+
+  If `path_or_binary` is a relative path, it is resolved against the configured image directory
+  (see "Image / asset path" in the module docs). Set `config :prawn_ex, image_dir: "priv/images"`
+  in your app to define where to look for image files.
+
+  Options: `:at` (required) `{x, y}` bottom-left of image, `:width` and `:height` in pt (default: intrinsic size).
+  """
+  @spec image(Document.t(), String.t() | binary(), keyword()) :: Document.t() | {:error, term()}
+  def image(doc, path_or_binary, opts) do
+    at = Keyword.fetch!(opts, :at)
+    {x, y} = at
+    path_or_binary = resolve_image_path(path_or_binary)
+
+    case load_jpeg(path_or_binary) do
+      {:ok, spec} ->
+        w = Keyword.get(opts, :width, spec.width)
+        h = Keyword.get(opts, :height, spec.height)
+        doc = ensure_current_page(doc)
+        {doc, id} = Document.add_image(doc, spec)
+        Document.append_op(doc, {:image, id, x, y, w, h})
+
+      err ->
+        err
+    end
+  end
+
+  defp load_jpeg(path_or_binary), do: PrawnEx.Image.JPEG.load(path_or_binary)
+
+  # Resolve relative paths against config :prawn_ex, :image_dir (asset path for users of the dep).
+  defp resolve_image_path(path_or_binary) when is_binary(path_or_binary) do
+    cond do
+      byte_size(path_or_binary) >= 2 and binary_part(path_or_binary, 0, 2) == <<0xFF, 0xD8>> ->
+        path_or_binary
+
+      Path.type(path_or_binary) == :absolute ->
+        path_or_binary
+
+      true ->
+        case Application.get_env(:prawn_ex, :image_dir) do
+          nil -> path_or_binary
+          dir -> Path.join(Path.expand(dir), path_or_binary)
+        end
+    end
   end
 
   @doc """

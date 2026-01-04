@@ -7,15 +7,17 @@ defmodule PrawnEx.Document do
   - `:margins` - optional `%{left: pt, right: pt, top: pt, bottom: pt}`
 
   The last page in `pages` is the "current" page for appending content.
+  Images are stored in `images` (list of image specs) and referenced by 1-based index.
   """
 
-  defstruct [:opts, :pages]
+  defstruct [:opts, :pages, :images]
 
   @type opts :: keyword()
 
   @type t :: %__MODULE__{
           opts: keyword(),
-          pages: [PrawnEx.Page.t()]
+          pages: [PrawnEx.Page.t()],
+          images: [map()]
         }
 
   @doc """
@@ -34,8 +36,18 @@ defmodule PrawnEx.Document do
   def new(opts \\ []) do
     %__MODULE__{
       opts: Keyword.new(opts),
-      pages: []
+      pages: [],
+      images: []
     }
+  end
+
+  @doc """
+  Appends an image spec to the document. Returns {doc, image_id} (image_id is 1-based).
+  """
+  @spec add_image(t(), map()) :: {t(), pos_integer()}
+  def add_image(%__MODULE__{images: images} = doc, spec) do
+    id = length(images) + 1
+    {%{doc | images: images ++ [spec]}, id}
   end
 
   @doc """

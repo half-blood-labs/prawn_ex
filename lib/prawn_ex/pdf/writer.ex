@@ -17,21 +17,39 @@ defmodule PrawnEx.PDF.Writer do
   Converts a Document to PDF binary.
   """
   @spec write(Document.t()) :: binary()
-  def write(%Document{pages: []}), do: write(Document.add_page(%Document{pages: [], opts: []}))
+  def write(%Document{pages: []}),
+    do: write(Document.add_page(%Document{pages: [], opts: [], images: []}))
 
-  def write(%Document{opts: opts, pages: pages} = _doc) do
+  def write(%Document{opts: opts, pages: pages, images: images}) do
+    images = images || []
     page_size = Keyword.get(opts, :page_size, :a4)
     media_box = Units.page_size(page_size)
 
-    # Object IDs: 1=Catalog, 2=Pages, 3..2+len = Page objs, then content streams
     n_pages = length(pages)
-    page_ids = Enum.to_list(3..(2 + n_pages))
-    content_ids = Enum.to_list((3 + n_pages)..(2 + 2 * n_pages))
+    # All image ids referenced in the doc (1-based)
+    image_ids_used = image_ids_from_pages(pages) |> Enum.uniq() |> Enum.sort()
+    n_images = length(image_ids_used)
+    # PDF object IDs: 1=Catalog, 2=Pages, then image objs, then content streams and pages
+    first_content_id = 3 + n_images
+    content_ids = Enum.to_list(first_content_id..(first_content_id - 1 + n_pages))
+    page_ids = Enum.to_list((first_content_id + n_pages)..(first_content_id + 2 * n_pages - 1))
 
-    # Build body chunks and collect offsets for xref
-    {body_io, offsets} = build_body(page_ids, content_ids, pages, media_box)
+    image_id_to_pdf_id =
+      image_ids_used
+      |> Enum.with_index(3)
+      |> Map.new(fn {img_id, pdf_id} -> {img_id, pdf_id} end)
+
+    {body_io, _} =
+      build_body(page_ids, content_ids, pages, media_box, images, image_id_to_pdf_id)
 
     body = IO.iodata_to_binary(body_io)
+
+    all_ids =
+      [1, 2] ++
+        Map.values(image_id_to_pdf_id) ++
+        Enum.flat_map(Enum.zip([content_ids, page_ids]), fn {c, p} -> [c, p] end)
+
+    offsets = compute_offsets(body, byte_size(@pdf_header), all_ids)
     xref = build_xref(offsets)
     startxref = byte_size(@pdf_header) + byte_size(body)
     size = length(offsets) + 1
@@ -53,28 +71,57 @@ defmodule PrawnEx.PDF.Writer do
     end)
   end
 
-  defp build_body(page_ids, content_ids, pages, media_box) do
-    base = byte_size(@pdf_header)
+  defp image_ids_from_pages(pages) do
+    Enum.flat_map(pages, fn page ->
+      page.content_ops
+      |> Enum.filter(&match?({:image, _, _, _, _, _}, &1))
+      |> Enum.map(fn {:image, id, _, _, _, _} -> id end)
+    end)
+  end
+
+  defp build_body(page_ids, content_ids, pages, media_box, images, image_id_to_pdf_id) do
     catalog_frag = "1 0 obj\n" <> Objects.catalog(2) <> "\nendobj\n"
     pages_frag = "2 0 obj\n" <> Objects.pages_tree(page_ids) <> "\nendobj\n"
 
-    frags =
-      [catalog_frag, pages_frag] ++
-        Enum.flat_map(Enum.zip([content_ids, page_ids, pages]), fn {content_id, page_id, page} ->
-          content_bin = ContentStream.build(page.content_ops)
-          stream_body = Objects.stream_dict_and_data(content_bin)
-          stream_frag = "#{content_id} 0 obj\n#{stream_body}\nendobj\n"
-          resources = Objects.resources_font("Helvetica")
-          page_body = Objects.page(2, content_id, media_box, resources)
-          page_frag = "#{page_id} 0 obj\n#{page_body}\nendobj\n"
-          [stream_frag, page_frag]
-        end)
+    image_frags =
+      Enum.map(Map.keys(image_id_to_pdf_id) |> Enum.sort(), fn id ->
+        spec = Enum.at(images, id - 1)
+        pdf_id = image_id_to_pdf_id[id]
 
-    body_iodata = frags
-    body_bin = IO.iodata_to_binary(body_iodata)
-    all_ids = [1, 2] ++ Enum.flat_map(Enum.zip([content_ids, page_ids]), fn {c, p} -> [c, p] end)
-    offsets = compute_offsets(body_bin, base, all_ids)
-    {body_iodata, offsets}
+        if spec && spec.filter == :dct do
+          body = Objects.image_xobject(spec.width, spec.height, spec.data, filter: :dct)
+          "#{pdf_id} 0 obj\n#{body}\nendobj\n"
+        else
+          ""
+        end
+      end)
+
+    page_frags =
+      Enum.flat_map(Enum.zip([content_ids, page_ids, pages]), fn {content_id, page_id, page} ->
+        image_ids_on_page =
+          page.content_ops
+          |> Enum.filter(&match?({:image, _, _, _, _, _}, &1))
+          |> Enum.map(fn {:image, id, _, _, _, _} -> id end)
+          |> Enum.uniq()
+
+        xobject_refs =
+          Enum.map(image_ids_on_page, fn id -> {"Im#{id}", image_id_to_pdf_id[id]} end)
+
+        resources =
+          if xobject_refs == [],
+            do: Objects.resources_font("Helvetica"),
+            else: Objects.resources_font_and_xobject("Helvetica", xobject_refs)
+
+        content_bin = ContentStream.build(page.content_ops)
+        stream_body = Objects.stream_dict_and_data(content_bin)
+        stream_frag = "#{content_id} 0 obj\n#{stream_body}\nendobj\n"
+        page_body = Objects.page(2, content_id, media_box, resources)
+        page_frag = "#{page_id} 0 obj\n#{page_body}\nendobj\n"
+        [stream_frag, page_frag]
+      end)
+
+    body_iodata = [catalog_frag, pages_frag] ++ image_frags ++ page_frags
+    {body_iodata, []}
   end
 
   defp build_xref(offsets) do

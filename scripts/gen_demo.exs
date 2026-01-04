@@ -1,5 +1,13 @@
 # Run with: mix run scripts/gen_demo.exs
-# Writes a beautiful demo PDF (3 pages: hero, table, charts) to project's output/ folder.
+# Writes a beautiful demo PDF (4 pages: hero, table, charts, images) to project's output/ folder.
+#
+# Image on page 4: "demo.jpg" is resolved via config :prawn_ex, image_dir (default "assets").
+# Add assets/demo.jpg or set image_dir in config to point at your JPEGs folder.
+
+# Minimal 1x1 pixel JPEG fallback when no demo.jpg is found
+minimal_jpeg =
+  "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
+  |> Base.decode64!(padding: false)
 
 output_dir = Path.join(File.cwd!(), "output")
 File.mkdir_p!(output_dir)
@@ -91,7 +99,7 @@ footer_y = 48
         ["Tables", "Done", "Header row, borders, column_widths"],
         ["Headers / footers", "Done", "Per-page callback, page number"],
         ["Charts", "Done", "Bar & line charts (Phase 3)"],
-        ["Images", "Planned", "Phase 3"]
+        ["Images", "Done", "JPEG XObject (Phase 3)"]
       ],
       at: {margin, page_h - 130},
       column_widths: [120, 80, 280],
@@ -128,6 +136,35 @@ footer_y = 48
       stroke_color: 0.2,
       axis: true
     )
+    # —— Page 4: Image demo ——
+    |> PrawnEx.add_page()
+    |> PrawnEx.set_font("Helvetica", 18)
+    |> PrawnEx.text_at({margin, page_h - 60}, "Images (Phase 3)")
+    |> PrawnEx.set_font("Helvetica", 10)
+    |> PrawnEx.set_non_stroking_gray(0.5)
+    |> PrawnEx.text_at({margin, page_h - 85}, "JPEG embedded via XObject — file path or binary")
+    |> PrawnEx.set_non_stroking_gray(0)
+    |> PrawnEx.set_font("Helvetica", 11)
+    |> PrawnEx.text_at({margin, page_h - 120}, "Embedded image:")
+    |> then(fn doc ->
+      # "demo.jpg" is resolved by PrawnEx against config :prawn_ex, image_dir (e.g. "assets")
+      case PrawnEx.image(doc, "demo.jpg", at: {margin, page_h - 420}, width: 240, height: 180) do
+        {:error, _} ->
+          case PrawnEx.image(doc, minimal_jpeg, at: {margin, page_h - 420}, width: 240, height: 180) do
+            {:error, _} -> doc
+            d -> d
+          end
+        doc_with_image ->
+          doc_with_image
+      end
+    end)
+    |> PrawnEx.set_font("Helvetica", 9)
+    |> PrawnEx.set_non_stroking_gray(0.5)
+    |> PrawnEx.text_at(
+      {margin, page_h - 460},
+      "config :prawn_ex, image_dir: \"assets\" — put demo.jpg there or set your path"
+    )
+    |> PrawnEx.set_non_stroking_gray(0)
   end)
 
 IO.puts("Demo PDF written to: #{path}")
