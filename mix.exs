@@ -4,8 +4,11 @@ defmodule PrawnEx.MixProject do
   def project do
     [
       app: :prawn_ex,
+      name: "prawn_ex",
       version: "0.1.0",
       elixir: "~> 1.16",
+      description:
+        "Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML.",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package()
@@ -15,7 +18,10 @@ defmodule PrawnEx.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      links: %{}
+      links: %{
+        "HexDocs" => "https://hexdocs.pm/prawn_ex",
+        "GitHub" => "https://github.com/prawn-ex/prawn_ex"
+      }
     ]
   end
 
