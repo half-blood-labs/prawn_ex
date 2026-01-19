@@ -138,6 +138,19 @@ defmodule PrawnEx do
   def set_stroking_gray(doc, g), do: Document.append_op(doc, {:set_stroking_gray, g})
 
   @doc """
+  Sets the non-stroking (fill and text) color to RGB. `r`, `g`, `b` in 0..1.
+  """
+  @spec set_non_stroking_rgb(Document.t(), number(), number(), number()) :: Document.t()
+  def set_non_stroking_rgb(doc, r, g, b),
+    do: Document.append_op(doc, {:set_non_stroking_rgb, r, g, b})
+
+  @doc """
+  Sets the stroking (lines, borders) color to RGB. `r`, `g`, `b` in 0..1.
+  """
+  @spec set_stroking_rgb(Document.t(), number(), number(), number()) :: Document.t()
+  def set_stroking_rgb(doc, r, g, b), do: Document.append_op(doc, {:set_stroking_rgb, r, g, b})
+
+  @doc """
   Draws a bar chart. `data` is a list of `{label, value}` or `[label, value]`.
   Options: `:at`, `:width`, `:height`, `:bar_color` (gray 0–1), `:axis`, `:labels`, `:label_font_size`, `:padding`.
   """

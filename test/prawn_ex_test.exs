@@ -147,4 +147,20 @@ defmodule PrawnExTest do
     assert binary =~ "/Subtype /Image"
     assert binary =~ "/DCTDecode"
   end
+
+  test "set_non_stroking_rgb and set_stroking_rgb emit rg and RG" do
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.set_non_stroking_rgb(0.2, 0.4, 0.8)
+      |> PrawnEx.set_stroking_rgb(0.1, 0.5, 0.9)
+      |> PrawnEx.rectangle(50, 50, 100, 100)
+      |> PrawnEx.fill()
+      |> PrawnEx.stroke()
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    assert binary =~ " rg\n"
+    assert binary =~ " RG\n"
+  end
 end

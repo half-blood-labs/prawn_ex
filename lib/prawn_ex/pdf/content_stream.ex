@@ -94,6 +94,16 @@ defmodule PrawnEx.PDF.ContentStream do
     {acc <> Encoder.number(g) <> " G\n", font_map}
   end
 
+  defp emit_op({:set_non_stroking_rgb, r, g, b}, {acc, font_map}) do
+    line = Encoder.number(r) <> " " <> Encoder.number(g) <> " " <> Encoder.number(b) <> " rg\n"
+    {acc <> line, font_map}
+  end
+
+  defp emit_op({:set_stroking_rgb, r, g, b}, {acc, font_map}) do
+    line = Encoder.number(r) <> " " <> Encoder.number(g) <> " " <> Encoder.number(b) <> " RG\n"
+    {acc <> line, font_map}
+  end
+
   defp emit_op({:image, id, x, y, w, h}, {acc, font_map}) do
     # q ... Q = save/restore; w 0 0 h x y cm = concat matrix (place image); /ImN Do = draw XObject
     line =

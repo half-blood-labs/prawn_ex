@@ -13,6 +13,8 @@ defmodule PrawnEx.Page do
   - `:stroke`, `:fill`
   - `{:set_non_stroking_gray, g}` (fill and text)
   - `{:set_stroking_gray, g}` (lines and strokes)
+  - `{:set_non_stroking_rgb, r, g, b}` (fill and text, 0..1)
+  - `{:set_stroking_rgb, r, g, b}` (lines and strokes, 0..1)
   - `{:image, image_id, x, y, width, height}` (draw image XObject)
   """
 
@@ -30,6 +32,8 @@ defmodule PrawnEx.Page do
           | :fill
           | {:set_non_stroking_gray, number()}
           | {:set_stroking_gray, number()}
+          | {:set_non_stroking_rgb, number(), number(), number()}
+          | {:set_stroking_rgb, number(), number(), number()}
           | {:image, pos_integer(), number(), number(), number(), number()}
 
   @type t :: %__MODULE__{content_ops: [content_op()]}
