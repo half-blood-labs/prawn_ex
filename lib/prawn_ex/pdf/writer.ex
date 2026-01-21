@@ -25,29 +25,20 @@ defmodule PrawnEx.PDF.Writer do
     page_size = Keyword.get(opts, :page_size, :a4)
     media_box = Units.page_size(page_size)
 
-    n_pages = length(pages)
-    # All image ids referenced in the doc (1-based)
     image_ids_used = image_ids_from_pages(pages) |> Enum.uniq() |> Enum.sort()
     n_images = length(image_ids_used)
-    # PDF object IDs: 1=Catalog, 2=Pages, then image objs, then content streams and pages
-    first_content_id = 3 + n_images
-    content_ids = Enum.to_list(first_content_id..(first_content_id - 1 + n_pages))
-    page_ids = Enum.to_list((first_content_id + n_pages)..(first_content_id + 2 * n_pages - 1))
 
     image_id_to_pdf_id =
       image_ids_used
       |> Enum.with_index(3)
       |> Map.new(fn {img_id, pdf_id} -> {img_id, pdf_id} end)
 
-    {body_io, _} =
-      build_body(page_ids, content_ids, pages, media_box, images, image_id_to_pdf_id)
+    {body_io, all_ids} =
+      build_body(pages, media_box, images, image_id_to_pdf_id, 3 + n_images)
 
     body = IO.iodata_to_binary(body_io)
 
-    all_ids =
-      [1, 2] ++
-        Map.values(image_id_to_pdf_id) ++
-        Enum.flat_map(Enum.zip([content_ids, page_ids]), fn {c, p} -> [c, p] end)
+    all_ids = [1, 2] ++ Map.values(image_id_to_pdf_id) ++ all_ids
 
     offsets = compute_offsets(body, byte_size(@pdf_header), all_ids)
     xref = build_xref(offsets)
@@ -79,8 +70,9 @@ defmodule PrawnEx.PDF.Writer do
     end)
   end
 
-  defp build_body(page_ids, content_ids, pages, media_box, images, image_id_to_pdf_id) do
+  defp build_body(pages, media_box, images, image_id_to_pdf_id, next_id) do
     catalog_frag = "1 0 obj\n" <> Objects.catalog(2) <> "\nendobj\n"
+    page_ids = collect_page_ids(pages, next_id)
     pages_frag = "2 0 obj\n" <> Objects.pages_tree(page_ids) <> "\nendobj\n"
 
     image_frags =
@@ -96,10 +88,25 @@ defmodule PrawnEx.PDF.Writer do
         end
       end)
 
-    page_frags =
-      Enum.flat_map(Enum.zip([content_ids, page_ids, pages]), fn {content_id, page_id, page} ->
+    {page_frags, all_ids, _} =
+      Enum.reduce(pages, {[], [], next_id}, fn page, {acc_frags, acc_ids, next_id} ->
+        content_id = next_id
+        next_id = next_id + 1
+
+        annot_list = page.annotations || []
+
+        {annot_frag_list, next_id} =
+          Enum.map_reduce(annot_list, next_id, fn annot, id ->
+            frag = annotation_frag(annot, id)
+            {{id, frag}, id + 1}
+          end)
+
+        annot_ids = Enum.map(annot_frag_list, fn {id, _} -> id end)
+        page_id = next_id
+        next_id = next_id + 1
+
         image_ids_on_page =
-          page.content_ops
+          (page.content_ops || [])
           |> Enum.filter(&match?({:image, _, _, _, _, _}, &1))
           |> Enum.map(fn {:image, id, _, _, _, _} -> id end)
           |> Enum.uniq()
@@ -112,16 +119,37 @@ defmodule PrawnEx.PDF.Writer do
             do: Objects.resources_font("Helvetica"),
             else: Objects.resources_font_and_xobject("Helvetica", xobject_refs)
 
-        content_bin = ContentStream.build(page.content_ops)
+        content_bin = ContentStream.build(page.content_ops || [])
         stream_body = Objects.stream_dict_and_data(content_bin)
         stream_frag = "#{content_id} 0 obj\n#{stream_body}\nendobj\n"
-        page_body = Objects.page(2, content_id, media_box, resources)
+
+        annot_obj_frags = Enum.map(annot_frag_list, fn {_, f} -> f end)
+        page_body = Objects.page(2, content_id, media_box, resources, annot_ids)
         page_frag = "#{page_id} 0 obj\n#{page_body}\nendobj\n"
-        [stream_frag, page_frag]
+
+        ids = [content_id] ++ annot_ids ++ [page_id]
+        {acc_frags ++ [stream_frag] ++ annot_obj_frags ++ [page_frag], acc_ids ++ ids, next_id}
       end)
 
     body_iodata = [catalog_frag, pages_frag] ++ image_frags ++ page_frags
-    {body_iodata, []}
+    {body_iodata, all_ids}
+  end
+
+  defp collect_page_ids(pages, start_id) do
+    {ids, _} =
+      Enum.reduce(pages, {[], start_id}, fn page, {acc, next_id} ->
+        content_id = next_id
+        n_annot = length(page.annotations || [])
+        page_id = content_id + 1 + n_annot
+        {acc ++ [page_id], page_id + 1}
+      end)
+
+    ids
+  end
+
+  defp annotation_frag(%{type: :link, rect: {x, y, w, h}, url: url}, id) do
+    body = Objects.link_annotation(x, y, w, h, url)
+    "#{id} 0 obj\n#{body}\nendobj\n"
   end
 
   defp build_xref(offsets) do

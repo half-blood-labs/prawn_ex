@@ -151,6 +151,16 @@ defmodule PrawnEx do
   def set_stroking_rgb(doc, r, g, b), do: Document.append_op(doc, {:set_stroking_rgb, r, g, b})
 
   @doc """
+  Adds an external link annotation on the current page. Clicking the rectangle opens the URL.
+  `x`, `y` are bottom-left in pt; `width` and `height` define the clickable area.
+  """
+  @spec link(Document.t(), number(), number(), number(), number(), String.t()) :: Document.t()
+  def link(doc, x, y, width, height, url) do
+    doc = ensure_current_page(doc)
+    Document.append_annotation(doc, %{type: :link, rect: {x, y, width, height}, url: url})
+  end
+
+  @doc """
   Draws a bar chart. `data` is a list of `{label, value}` or `[label, value]`.
   Options: `:at`, `:width`, `:height`, `:bar_color` (gray 0–1), `:axis`, `:labels`, `:label_font_size`, `:padding`.
   """

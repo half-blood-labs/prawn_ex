@@ -148,6 +148,19 @@ defmodule PrawnExTest do
     assert binary =~ "/DCTDecode"
   end
 
+  test "link/5 adds external link annotation" do
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.link(100, 100, 200, 30, "https://hex.pm/packages/prawn_ex")
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    assert binary =~ "/Subtype /Link"
+    assert binary =~ "/URI"
+    assert binary =~ "hex.pm"
+  end
+
   test "set_non_stroking_rgb and set_stroking_rgb emit rg and RG" do
     binary =
       PrawnEx.Document.new()

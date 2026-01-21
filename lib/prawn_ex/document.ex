@@ -77,6 +77,17 @@ defmodule PrawnEx.Document do
     replace_current_page(doc, updated_page)
   end
 
+  @doc """
+  Appends an annotation (e.g. link) to the current page. Returns the updated document.
+  """
+  @spec append_annotation(t(), map()) :: t()
+  def append_annotation(doc, annot) do
+    doc = ensure_current_page(doc)
+    current = current_page(doc)
+    updated_page = PrawnEx.Page.add_annotation(current, annot)
+    replace_current_page(doc, updated_page)
+  end
+
   defp ensure_current_page(%__MODULE__{pages: []} = doc), do: add_page(doc)
   defp ensure_current_page(doc), do: doc
 

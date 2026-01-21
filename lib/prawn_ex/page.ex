@@ -18,7 +18,7 @@ defmodule PrawnEx.Page do
   - `{:image, image_id, x, y, width, height}` (draw image XObject)
   """
 
-  defstruct [:content_ops]
+  defstruct [:content_ops, :annotations]
 
   @type content_op ::
           {:set_font, String.t(), number()}
@@ -36,14 +36,14 @@ defmodule PrawnEx.Page do
           | {:set_stroking_rgb, number(), number(), number()}
           | {:image, pos_integer(), number(), number(), number(), number()}
 
-  @type t :: %__MODULE__{content_ops: [content_op()]}
+  @type t :: %__MODULE__{content_ops: [content_op()], annotations: [map()]}
 
   @doc """
   Creates a new empty page.
   """
   @spec new() :: t()
   def new do
-    %__MODULE__{content_ops: []}
+    %__MODULE__{content_ops: [], annotations: []}
   end
 
   @doc """
@@ -52,5 +52,13 @@ defmodule PrawnEx.Page do
   @spec add_op(t(), content_op()) :: t()
   def add_op(%__MODULE__{content_ops: ops} = page, op) do
     %{page | content_ops: ops ++ [op]}
+  end
+
+  @doc """
+  Appends an annotation (e.g. link) to the page. Returns the updated page.
+  """
+  @spec add_annotation(t(), map()) :: t()
+  def add_annotation(%__MODULE__{annotations: annots} = page, annot) do
+    %{page | annotations: annots ++ [annot]}
   end
 end
