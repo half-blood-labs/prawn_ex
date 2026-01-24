@@ -76,12 +76,18 @@ defmodule PrawnEx.PDF.Objects do
   end
 
   @doc """
-  Image XObject: stream dict + data. filter: :dct for JPEG.
+  Image XObject: stream dict + data. filter: :dct for JPEG, :flate for PNG.
   """
   def image_xobject(width, height, data, filter: :dct) do
     len = byte_size(data)
 
     "<< /Type /XObject /Subtype /Image /Width #{width} /Height #{height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length #{len} >>\nstream\n#{data}\nendstream"
+  end
+
+  def image_xobject(width, height, data, filter: :flate) do
+    len = byte_size(data)
+
+    "<< /Type /XObject /Subtype /Image /Width #{width} /Height #{height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length #{len} >>\nstream\n#{data}\nendstream"
   end
 
   @doc """

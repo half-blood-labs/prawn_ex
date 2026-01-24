@@ -197,7 +197,7 @@ defmodule PrawnEx do
     {x, y} = at
     path_or_binary = resolve_image_path(path_or_binary)
 
-    case load_jpeg(path_or_binary) do
+    case load_image(path_or_binary) do
       {:ok, spec} ->
         w = Keyword.get(opts, :width, spec.width)
         h = Keyword.get(opts, :height, spec.height)
@@ -210,12 +210,22 @@ defmodule PrawnEx do
     end
   end
 
-  defp load_jpeg(path_or_binary), do: PrawnEx.Image.JPEG.load(path_or_binary)
+  defp load_image(path_or_binary) do
+    case PrawnEx.Image.JPEG.load(path_or_binary) do
+      {:ok, _} = ok -> ok
+      _ -> PrawnEx.Image.PNG.load(path_or_binary)
+    end
+  end
 
   # Resolve relative paths against config :prawn_ex, :image_dir (asset path for users of the dep).
+  @png_sig <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A>>
+
   defp resolve_image_path(path_or_binary) when is_binary(path_or_binary) do
     cond do
       byte_size(path_or_binary) >= 2 and binary_part(path_or_binary, 0, 2) == <<0xFF, 0xD8>> ->
+        path_or_binary
+
+      byte_size(path_or_binary) >= 8 and binary_part(path_or_binary, 0, 8) == @png_sig ->
         path_or_binary
 
       Path.type(path_or_binary) == :absolute ->

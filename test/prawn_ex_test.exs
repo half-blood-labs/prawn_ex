@@ -148,6 +148,35 @@ defmodule PrawnExTest do
     assert binary =~ "/DCTDecode"
   end
 
+  test "PNG image loads and emits FlateDecode XObject" do
+    # Minimal 1x1 RGB PNG (filter 0, one row)
+    sig = <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A>>
+    ihdr = <<1::32-big, 1::32-big, 8, 2, 0, 0, 0>>
+    crc_ihdr = :erlang.crc32(<<"IHDR", ihdr::binary>>)
+    ihdr_chunk = <<13::32-big, "IHDR", ihdr::binary, crc_ihdr::32-big>>
+    raw_row = <<0, 255, 0, 0>>
+    idat_data = :zlib.compress(raw_row)
+    crc_idat = :erlang.crc32(<<"IDAT", idat_data::binary>>)
+    idat_chunk = <<byte_size(idat_data)::32-big, "IDAT", idat_data::binary, crc_idat::32-big>>
+    iend_chunk = <<0::32-big, "IEND", :erlang.crc32("IEND")::32-big>>
+    png = sig <> ihdr_chunk <> idat_chunk <> iend_chunk
+
+    assert {:ok, spec} = PrawnEx.Image.PNG.load(png)
+    assert spec.width == 1
+    assert spec.height == 1
+    assert spec.filter == :flate
+
+    result =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.image(png, at: {10, 10})
+
+    refute match?({:error, _}, result)
+    binary = PrawnEx.to_binary(result)
+    assert binary =~ "/FlateDecode"
+    assert binary =~ "/Subtype /Image"
+  end
+
   test "link/5 adds external link annotation" do
     binary =
       PrawnEx.Document.new()
