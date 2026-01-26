@@ -105,6 +105,13 @@ defmodule PrawnEx.PDF.Writer do
         page_id = next_id
         next_id = next_id + 1
 
+        font_names = fonts_used_on_page(page.content_ops || [])
+
+        font_map =
+          font_names
+          |> Enum.with_index(1)
+          |> Map.new(fn {name, i} -> {name, "F#{i}"} end)
+
         image_ids_on_page =
           (page.content_ops || [])
           |> Enum.filter(&match?({:image, _, _, _, _, _}, &1))
@@ -116,10 +123,10 @@ defmodule PrawnEx.PDF.Writer do
 
         resources =
           if xobject_refs == [],
-            do: Objects.resources_font("Helvetica"),
-            else: Objects.resources_font_and_xobject("Helvetica", xobject_refs)
+            do: Objects.resources_fonts(font_names),
+            else: Objects.resources_fonts_and_xobject(font_names, xobject_refs)
 
-        content_bin = ContentStream.build(page.content_ops || [])
+        content_bin = ContentStream.build(page.content_ops || [], font_map)
         stream_body = Objects.stream_dict_and_data(content_bin)
         stream_frag = "#{content_id} 0 obj\n#{stream_body}\nendobj\n"
 
@@ -133,6 +140,13 @@ defmodule PrawnEx.PDF.Writer do
 
     body_iodata = [catalog_frag, pages_frag] ++ image_frags ++ page_frags
     {body_iodata, all_ids}
+  end
+
+  defp fonts_used_on_page(ops) do
+    ops
+    |> Enum.filter(&match?({:set_font, _, _}, &1))
+    |> Enum.map(fn {:set_font, name, _} -> name end)
+    |> Enum.uniq()
   end
 
   defp collect_page_ids(pages, start_id) do

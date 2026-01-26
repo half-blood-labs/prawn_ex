@@ -190,6 +190,27 @@ defmodule PrawnExTest do
     assert binary =~ "hex.pm"
   end
 
+  test "multiple built-in fonts (Helvetica, Times-Bold, Courier) are emitted in resources" do
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.set_font("Helvetica", 10)
+      |> PrawnEx.text_at({50, 600}, "Normal")
+      |> PrawnEx.set_font("Times-Bold", 14)
+      |> PrawnEx.text_at({100, 500}, "Bold")
+      |> PrawnEx.set_font("Courier", 9)
+      |> PrawnEx.text_at({100, 400}, "Mono")
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    assert binary =~ "/Helvetica"
+    assert binary =~ "/Times-Bold"
+    assert binary =~ "/Courier"
+    assert binary =~ "/F1 10 Tf"
+    assert binary =~ "/F2 14 Tf"
+    assert binary =~ "/F3 9 Tf"
+  end
+
   test "set_non_stroking_rgb and set_stroking_rgb emit rg and RG" do
     binary =
       PrawnEx.Document.new()

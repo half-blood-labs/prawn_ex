@@ -55,24 +55,44 @@ defmodule PrawnEx.PDF.Objects do
   end
 
   @doc """
-  Resources dict with built-in font. font_name e.g. "Helvetica".
+  Resources dict with built-in font(s). font_names: list of e.g. ["Helvetica", "Times-Bold"].
+  Emits /F1, /F2, ... for each. Empty list defaults to ["Helvetica"].
   """
-  def resources_font(font_name) do
-    base = "/" <> font_name
-    "<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont #{base} >> >> >>"
+  def resources_fonts(font_names) do
+    names = if font_names == [], do: ["Helvetica"], else: font_names
+
+    font_part =
+      names
+      |> Enum.with_index(1)
+      |> Enum.map(fn {name, i} ->
+        base = "/" <> name
+        "/F#{i} << /Type /Font /Subtype /Type1 /BaseFont #{base} >>"
+      end)
+      |> Enum.join(" ")
+
+    "<< /Font << #{font_part} >> >>"
   end
 
   @doc """
-  Resources dict with font and XObject refs. xobject_refs: [{"Im1", 7}] -> /Im1 7 0 R
+  Resources dict with fonts and XObject refs. xobject_refs: [{"Im1", 7}] -> /Im1 7 0 R
   """
-  def resources_font_and_xobject(font_name, xobject_refs) do
-    base = "/" <> font_name
+  def resources_fonts_and_xobject(font_names, xobject_refs) do
+    names = if font_names == [], do: ["Helvetica"], else: font_names
+
+    font_part =
+      names
+      |> Enum.with_index(1)
+      |> Enum.map(fn {name, i} ->
+        base = "/" <> name
+        "/F#{i} << /Type /Font /Subtype /Type1 /BaseFont #{base} >>"
+      end)
+      |> Enum.join(" ")
 
     xobj_part =
       Enum.map(xobject_refs, fn {name, id} -> "/#{name} #{id} 0 R" end)
       |> Enum.join(" ")
 
-    "<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont #{base} >> >> /XObject << #{xobj_part} >> >>"
+    "<< /Font << #{font_part} >> /XObject << #{xobj_part} >> >>"
   end
 
   @doc """
