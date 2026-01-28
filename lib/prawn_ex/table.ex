@@ -22,6 +22,7 @@ defmodule PrawnEx.Table do
   - `:border` - draw cell borders (default true)
   - `:font_size` - body font size (default 10)
   - `:header_font_size` - header row font size (default 11)
+  - `:align` - cell alignment: `:left` (default), `:center`, or `:right` for all cells; or a list per column e.g. `[:left, :center, :right]`
   - `:page_size` - for `:auto` column widths (default :a4)
 
   ## Examples
@@ -40,17 +41,20 @@ defmodule PrawnEx.Table do
     border? = Keyword.get(opts, :border, true)
     font_size = Keyword.get(opts, :font_size, 10)
     header_font_size = Keyword.get(opts, :header_font_size, 11)
+    align = Keyword.get(opts, :align, :left)
     page_size = Keyword.get(opts, :page_size, :a4)
 
     rows = normalize_rows(rows)
     n_cols = rows |> List.first() |> length()
     column_widths = resolve_column_widths(opts, n_cols, page_size)
+    align_list = resolve_align(align, n_cols)
 
     draw_rows(doc, rows, at_x, at_y, column_widths, row_height, cell_padding, %{
       header?: header?,
       border?: border?,
       font_size: font_size,
-      header_font_size: header_font_size
+      header_font_size: header_font_size,
+      align_list: align_list
     })
   end
 
@@ -59,6 +63,18 @@ defmodule PrawnEx.Table do
       row when is_list(row) -> Enum.map(row, &to_string/1)
       row when is_map(row) -> row |> Map.values() |> Enum.map(&to_string/1)
     end)
+  end
+
+  defp resolve_align(align, n_cols) when align in [:left, :center, :right] do
+    List.duplicate(align, n_cols)
+  end
+
+  defp resolve_align(align_list, n_cols) when is_list(align_list) do
+    if length(align_list) >= n_cols do
+      Enum.take(align_list, n_cols)
+    else
+      align_list ++ List.duplicate(:left, n_cols - length(align_list))
+    end
   end
 
   defp resolve_column_widths(opts, n_cols, page_size) do
@@ -89,7 +105,8 @@ defmodule PrawnEx.Table do
       draw_row_cells(acc, row, at_x, y_bottom, col_widths, row_height, padding, %{
         is_header: is_header,
         border?: border?,
-        font_size: if(is_header, do: header_font_size, else: font_size)
+        font_size: if(is_header, do: header_font_size, else: font_size),
+        align_list: opts.align_list
       })
     end)
   end
@@ -98,6 +115,7 @@ defmodule PrawnEx.Table do
     is_header = opts.is_header
     border? = opts.border?
     font_size = opts.font_size
+    align_list = opts.align_list || List.duplicate(:left, length(col_widths))
 
     doc =
       if is_header do
@@ -114,10 +132,10 @@ defmodule PrawnEx.Table do
       end
 
     doc =
-      Enum.with_index(Enum.zip(row, col_widths))
-      |> Enum.reduce(doc, fn {{cell_text, col_w}, j}, d ->
+      Enum.with_index(Enum.zip(Enum.zip(row, col_widths), align_list))
+      |> Enum.reduce(doc, fn {{{cell_text, col_w}, align}, j}, d ->
         cell_x = x_start + (Enum.take(col_widths, j) |> Enum.sum())
-        text_x = cell_x + padding
+        text_x = text_x_for_align(cell_x, col_w, padding, font_size, cell_text, align)
         text_y = y_bottom + padding
 
         d =
@@ -137,5 +155,25 @@ defmodule PrawnEx.Table do
       end)
 
     doc
+  end
+
+  # Approximate text width for Helvetica: ~0.5 pt per unit of font size per character
+  defp text_x_for_align(cell_x, _col_w, padding, _font_size, _text, :left) do
+    cell_x + padding
+  end
+
+  defp text_x_for_align(cell_x, col_w, _padding, font_size, text, :center) do
+    est_w = estimated_text_width(text, font_size)
+    cell_x + max(0, (col_w - est_w) / 2)
+  end
+
+  defp text_x_for_align(cell_x, col_w, padding, font_size, text, :right) do
+    est_w = estimated_text_width(text, font_size)
+    cell_x + col_w - padding - est_w
+  end
+
+  defp estimated_text_width(text, font_size) when is_binary(text) do
+    # Helvetica-like: ~0.5 pt per character per unit font size
+    String.length(text) * font_size * 0.5
   end
 end

@@ -97,6 +97,20 @@ defmodule PrawnExTest do
     assert binary =~ "2"
   end
 
+  test "table/3 with :align option (per-column center/right)" do
+    rows = [["Item", "Qty", "Price"], ["Widget", "2", "$10"], ["Gadget", "1", "$25"]]
+
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.table(rows, at: {50, 650}, column_widths: [200, 80, 80], align: [:left, :center, :right])
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    assert binary =~ "Widget"
+    assert binary =~ "$10"
+  end
+
   test "bar_chart/3 draws bars and labels" do
     data = [{"Jan", 40}, {"Feb", 55}, {"Mar", 70}]
 
