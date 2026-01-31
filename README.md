@@ -5,6 +5,28 @@
 
 Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML: build a document spec and emit PDF 1.4.
 
+## Getting started
+
+Add the dependency and build your first PDF:
+
+```elixir
+# mix.exs
+def deps do
+  [{:prawn_ex, "~> 0.1.0"}]
+end
+```
+
+```elixir
+PrawnEx.build("output.pdf", fn doc ->
+  doc
+  |> PrawnEx.add_page()
+  |> PrawnEx.set_font("Helvetica", 12)
+  |> PrawnEx.text_at({72, 700}, "Hello, PDF!")
+end)
+```
+
+See [Demo](#demo) for a full tour, or try the [invoice](#examples) or [report with chart](#examples) examples.
+
 ## Usage
 
 ```elixir
@@ -103,6 +125,11 @@ mix run scripts/gen_demo.exs
 ```
 
 Output: `output/prawn_ex_demo.pdf` (4 pages: hero, table, charts, images). The image on page 4 uses `demo.jpg` resolved from the configured `image_dir` (default `"assets"`). Add `assets/demo.jpg` to show your own image, or set `config :prawn_ex, image_dir: "path/to/your/jpegs"` in `config/config.exs`.
+
+### Examples
+
+- **Invoice** — `mix run scripts/invoice.exs` → `output/invoice.pdf` (header, line-item table with alignment, totals, footer).
+- **Report with chart** — `mix run scripts/report_with_chart.exs` → `output/report_with_chart.pdf` (table + bar chart).
 
 ## Installation
 
