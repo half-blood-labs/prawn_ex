@@ -1,9 +1,25 @@
 # PrawnEx
 
+[![CI](https://github.com/prawn-ex/prawn_ex/actions/workflows/ci.yml/badge.svg)](https://github.com/prawn-ex/prawn_ex/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
+[![Hex.pm](https://img.shields.io/hexpm/dt/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
 [![Hex.pm](https://img.shields.io/hexpm/l/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
 
+**Version** 0.1.0 · **Elixir** ~> 1.16
+
 Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML: build a document spec and emit PDF 1.4.
+
+## Features
+
+- **Document & pages** — Multi-page PDFs, configurable page size (A4, Letter, etc.).
+- **Text** — Set font and size (Helvetica, Times-Roman, Times-Bold, Courier, etc.), draw text at position or append to cursor.
+- **Graphics** — Lines, rectangles, move-to/line-to paths; stroke and fill.
+- **Colors** — Gray (stroking and non-stroking) and RGB (e.g. for fill and stroke).
+- **Tables** — Grid with optional header row, configurable column widths, row height, padding, borders; **cell alignment** per column (`:left`, `:center`, `:right`).
+- **Charts** — Bar charts and line charts from data (no external deps).
+- **Images** — Embed **JPEG** and **PNG** (file path or binary); optional width/height; asset directory via config.
+- **Links** — External link annotations (clickable URLs).
+- **Headers & footers** — Per-page callbacks with page number for titles and “Page N”.
 
 ## Getting started
 
@@ -62,7 +78,7 @@ doc
 |> PrawnEx.table(rows, at: {50, 650}, column_widths: [200, 80, 80], header: true)
 ```
 
-Options: `:at`, `:column_widths` (list or `:auto`), `:row_height`, `:cell_padding`, `:header`, `:border`, `:font_size`, `:header_font_size`.
+Options: `:at`, `:column_widths` (list or `:auto`), `:row_height`, `:cell_padding`, `:header`, `:border`, `:align` (`:left` / `:center` / `:right` or list per column), `:font_size`, `:header_font_size`.
 
 ### Headers and footers
 
@@ -98,7 +114,7 @@ Options: `:at`, `:width`, `:height`, `:bar_color` / `:stroke_color`, `:axis`, `:
 
 ### Images
 
-Embed JPEG images (file path or binary). Optionally set `:width` and `:height` in pt; default is intrinsic size.
+Embed **JPEG** or **PNG** images (file path or binary). Optionally set `:width` and `:height` in pt; default is intrinsic size.
 
 **Image / asset path:** Set `config :prawn_ex, image_dir: "priv/images"` (or any directory) in your application config. Relative paths passed to `PrawnEx.image/3` are then resolved from that directory. Absolute paths and raw JPEG binaries are used as-is.
 
@@ -114,7 +130,8 @@ doc
 
 ### Colors
 
-Use gray for strokes and fill/text: `PrawnEx.set_stroking_gray(doc, 0.8)`, `PrawnEx.set_non_stroking_gray(doc, 0.2)` (0 = black, 1 = white).
+Gray: `PrawnEx.set_stroking_gray(doc, 0.8)`, `PrawnEx.set_non_stroking_gray(doc, 0.2)` (0 = black, 1 = white).  
+RGB: `PrawnEx.set_non_stroking_rgb(doc, r, g, b)`, `PrawnEx.set_stroking_rgb(doc, r, g, b)` (0–1).
 
 ## Demo
 
