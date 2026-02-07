@@ -30,3 +30,5 @@ prawn_ex-*.tar
 
 # Local plan (do not commit)
 /PLAN.md
+
+.DS_Store

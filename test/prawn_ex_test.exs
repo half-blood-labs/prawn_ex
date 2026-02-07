@@ -103,7 +103,11 @@ defmodule PrawnExTest do
     binary =
       PrawnEx.Document.new()
       |> PrawnEx.add_page()
-      |> PrawnEx.table(rows, at: {50, 650}, column_widths: [200, 80, 80], align: [:left, :center, :right])
+      |> PrawnEx.table(rows,
+        at: {50, 650},
+        column_widths: [200, 80, 80],
+        align: [:left, :center, :right]
+      )
       |> PrawnEx.to_binary()
 
     assert binary =~ "%PDF-1.4"
