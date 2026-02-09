@@ -1,9 +1,10 @@
 # PrawnEx
 
-[![CI](https://github.com/prawn-ex/prawn_ex/actions/workflows/ci.yml/badge.svg)](https://github.com/prawn-ex/prawn_ex/actions/workflows/ci.yml)
+[![CI](https://github.com/half-blood-labs/prawn_ex/actions/workflows/ci.yml/badge.svg)](https://github.com/half-blood-labs/prawn_ex/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
 [![Hex.pm](https://img.shields.io/hexpm/dt/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
 [![Hex.pm](https://img.shields.io/hexpm/l/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
+[![Elixir](https://img.shields.io/badge/elixir-%3E%3D%201.16-purple)](https://elixir-lang.org)
 
 **Version** 0.1.0 · **Elixir** ~> 1.16
 
