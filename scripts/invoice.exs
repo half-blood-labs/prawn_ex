@@ -9,24 +9,17 @@ page_w = 595
 page_h = 842
 margin = 50
 
-# Example line items: description, qty, unit price
-line_items = [
-  ["Widget Pro", "2", "$25.00"],
-  ["Gadget Basic", "5", "$12.50"],
-  ["Support (1 year)", "1", "$99.00"]
-]
-
-# Build totals from line items (simplified: no real math)
-subtotal = "$211.50"
-tax = "$21.15"
-total = "$232.65"
-
+# Table: header row + line items (description, qty, unit price, amount)
 rows = [
   ["Description", "Qty", "Unit Price", "Amount"],
   ["Widget Pro", "2", "$25.00", "$50.00"],
   ["Gadget Basic", "5", "$12.50", "$62.50"],
   ["Support (1 year)", "1", "$99.00", "$99.00"]
 ]
+
+subtotal = "$211.50"
+tax = "$21.15"
+total = "$232.65"
 
 :ok =
   PrawnEx.build(path, [

@@ -17,7 +17,7 @@ Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTM
 - **Colors** — Gray (stroking and non-stroking) and RGB (e.g. for fill and stroke).
 - **Tables** — Grid with optional header row, configurable column widths, row height, padding, borders; **cell alignment** per column (`:left`, `:center`, `:right`).
 - **Charts** — Bar charts and line charts from data (no external deps).
-- **Images** — Embed **JPEG** and **PNG** (file path or binary); optional width/height; asset directory via config.
+- **Images** — Embed **JPEG** (file path or binary); optional width/height; asset directory via config.
 - **Links** — External link annotations (clickable URLs).
 - **Headers & footers** — Per-page callbacks with page number for titles and “Page N”.
 
@@ -114,7 +114,7 @@ Options: `:at`, `:width`, `:height`, `:bar_color` / `:stroke_color`, `:axis`, `:
 
 ### Images
 
-Embed **JPEG** or **PNG** images (file path or binary). Optionally set `:width` and `:height` in pt; default is intrinsic size.
+Embed JPEG images (file path or binary). Optionally set `:width` and `:height` in pt; default is intrinsic size.
 
 **Image / asset path:** Set `config :prawn_ex, image_dir: "priv/images"` (or any directory) in your application config. Relative paths passed to `PrawnEx.image/3` are then resolved from that directory. Absolute paths and raw JPEG binaries are used as-is.
 

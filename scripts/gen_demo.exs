@@ -2,7 +2,7 @@
 # Writes a beautiful demo PDF (4 pages: hero, table, charts, images) to project's output/ folder.
 #
 # Image on page 4: "demo.jpg" is resolved via config :prawn_ex, image_dir (default "assets").
-# Add assets/demo.jpg or set image_dir in config to point at your JPEGs folder.
+# Add assets/demo.jpg or set image_dir in config.
 
 # Minimal 1x1 pixel JPEG fallback when no demo.jpg is found
 minimal_jpeg =
@@ -147,15 +147,13 @@ footer_y = 48
     |> PrawnEx.set_font("Helvetica", 11)
     |> PrawnEx.text_at({margin, page_h - 120}, "Embedded image:")
     |> then(fn doc ->
-      # "demo.jpg" is resolved by PrawnEx against config :prawn_ex, image_dir (e.g. "assets")
       case PrawnEx.image(doc, "demo.jpg", at: {margin, page_h - 420}, width: 240, height: 180) do
         {:error, _} ->
           case PrawnEx.image(doc, minimal_jpeg, at: {margin, page_h - 420}, width: 240, height: 180) do
             {:error, _} -> doc
             d -> d
           end
-        doc_with_image ->
-          doc_with_image
+        doc_with_image -> doc_with_image
       end
     end)
     |> PrawnEx.set_font("Helvetica", 9)
