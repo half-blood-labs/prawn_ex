@@ -107,6 +107,18 @@ footer_y = 48
       header: true,
       cell_padding: 8
     )
+    |> PrawnEx.set_font("Helvetica", 11)
+    |> PrawnEx.text_at({margin, page_h - 320}, "Text wrapping (text_box):")
+    |> PrawnEx.set_font("Helvetica", 10)
+    |> PrawnEx.set_non_stroking_gray(0.2)
+    |> PrawnEx.text_box(
+      "PrawnEx can wrap long text to fit a width. Use text_box(doc, string, at: {x, y}, width: pt) for paragraphs. Lines break on spaces; long words break by character.",
+      at: {margin, page_h - 345},
+      width: page_w - 2 * margin,
+      font_size: 10,
+      line_height: 14
+    )
+    |> PrawnEx.set_non_stroking_gray(0)
     # —— Page 3: Charts ——
     |> PrawnEx.add_page()
     |> PrawnEx.set_font("Helvetica", 18)

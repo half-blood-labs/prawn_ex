@@ -166,6 +166,24 @@ defmodule PrawnExTest do
     assert binary =~ "/DCTDecode"
   end
 
+  test "text_box/3 wraps text and emits multiple lines" do
+    # Text that must wrap (narrow width) so we get at least 2 lines
+    long_text = "The quick brown fox jumps over the lazy dog and runs away."
+
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.text_box(long_text, at: {50, 700}, width: 80, font_size: 12)
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    # Multiple Tj (show text) ops indicate multiple lines
+    tj_count = binary |> String.split(" Tj\n") |> length()
+    assert tj_count >= 2
+    assert binary =~ "quick"
+    assert binary =~ "lazy"
+  end
+
   test "link/5 adds external link annotation" do
     binary =
       PrawnEx.Document.new()

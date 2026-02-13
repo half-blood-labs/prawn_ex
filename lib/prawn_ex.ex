@@ -89,6 +89,41 @@ defmodule PrawnEx do
   def text_at(doc, pos, s), do: Document.append_op(doc, {:text_at, pos, s})
 
   @doc """
+  Draws text wrapped to fit within a width. First line baseline at `{x, y}`; subsequent lines below (smaller y).
+
+  Options:
+  - `:at` - `{x, y}` (required) — position of first line baseline
+  - `:width` - max width in pt (required)
+  - `:font_name` - default `"Helvetica"`
+  - `:font_size` - default `12`
+  - `:line_height` - default `1.2 * font_size`
+  """
+  @spec text_box(Document.t(), String.t(), keyword()) :: Document.t()
+  def text_box(doc, text, opts) do
+    at = Keyword.fetch!(opts, :at)
+    width = Keyword.fetch!(opts, :width)
+    font_name = Keyword.get(opts, :font_name, "Helvetica")
+    font_size = Keyword.get(opts, :font_size, 12)
+    line_height = Keyword.get(opts, :line_height, font_size * 1.2)
+
+    {x, y} = at
+    lines = PrawnEx.Text.wrap_to_lines(text, width, font_size)
+
+    if lines == [] do
+      doc
+    else
+      doc
+      |> Document.append_op({:set_font, font_name, font_size})
+      |> then(fn d ->
+        Enum.with_index(lines)
+        |> Enum.reduce(d, fn {line, i}, acc ->
+          Document.append_op(acc, {:text_at, {x, y - i * line_height}, line})
+        end)
+      end)
+    end
+  end
+
+  @doc """
   Draws a line from `{x1, y1}` to `{x2, y2}`. Call `stroke/1` to draw it.
   """
   @spec line(Document.t(), {number(), number()}, {number(), number()}) :: Document.t()
