@@ -32,3 +32,4 @@ prawn_ex-*.tar
 /PLAN.md
 
 .DS_Store
+.elixir_ls/
