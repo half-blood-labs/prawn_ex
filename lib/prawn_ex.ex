@@ -23,7 +23,7 @@ defmodule PrawnEx do
         |> PrawnEx.stroke()
       end)
 
-  See module docs for `PrawnEx.Document` and `PrawnEx.Units`.
+  See module docs for `PrawnEx.Document`, `PrawnEx.Units`, and `PrawnEx.Layout` (flow helpers on top of this API).
   """
 
   alias PrawnEx.Document

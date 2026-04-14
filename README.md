@@ -18,6 +18,7 @@ Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTM
 - **Colors** — Gray (stroking and non-stroking) and RGB (e.g. for fill and stroke).
 - **Tables** — Grid with optional header row, configurable column widths, row height, padding, borders; **cell alignment** per column (`:left`, `:center`, `:right`).
 - **Charts** — Bar charts and line charts from data (no external deps).
+- **Flow layout** — `PrawnEx.Layout`: margin box + vertical cursor for headings, wrapped paragraphs, spacers, and tables (see [Flow layout](#flow-layout-prawnexlayout)); still pure PDF ops under the hood.
 - **Images** — Embed **JPEG** (`/DCTDecode`) or **PNG** (`/FlateDecode`): 8-bit RGB/RGBA, non-interlaced, path or binary; optional width/height; `image_dir` config for relative paths.
 - **Links** — External link annotations (clickable URLs).
 - **Headers & footers** — Per-page callbacks with page number for titles and “Page N”.
@@ -112,6 +113,20 @@ PrawnEx.line_chart(doc, [10, 25, 15, 40, 35], at: {50, 400}, width: 400, height:
 ```
 
 Options: `:at`, `:width`, `:height`, `:bar_color` / `:stroke_color`, `:axis`, `:labels`, `:padding`.
+
+### Flow layout (`PrawnEx.Layout`)
+
+For documents that are mostly **stacked blocks** (title, paragraphs, table), a positional API forces you to repeat `page_h - N` math. `PrawnEx.Layout` tracks a **baseline cursor** inside a margin box and emits the same `PrawnEx` ops (`text_at`, `text_box`, `table`).
+
+- **`attach(doc, page_size:, margins:)`** — `margins` can be a number (all sides) or `%{left:, right:, top:, bottom:}` (missing keys default to 50 pt).
+- **`heading(layout, text, opts)`** — single line; options include `:font`, `:font_size`, `:lead`, `:gap_after`.
+- **`paragraph(layout, text, opts)`** — wraps with `text_box`; `:line_height`, `:gap_after`, optional `:width`.
+- **`spacer(layout, pts)`** — move the cursor down the page.
+- **`table(layout, rows, opts)`** — forwards to `PrawnEx.table/3`; sets `:at` and `:page_size`. Use `:clearance` (space from cursor to table top) and `:after_gap` to tune vertical rhythm.
+- **`escape(layout, fn doc, ctx -> {doc, new_cursor_y} end)`** — escape hatch for one-off coordinates; `ctx` includes `:cursor_y`, `:content_left`, `:content_width`, `:page_w`, `:page_h`, `:margins`.
+- **`to_doc(layout)`** — unwrap for `PrawnEx.to_binary/1` or the end of a `build/3` callback.
+
+There is **no** automatic pagination or flex/grid; overflow is still yours to handle. See `mix run scripts/invoice.exs` for a full example.
 
 ### Images
 
