@@ -162,13 +162,19 @@ RGB: `PrawnEx.set_non_stroking_rgb(doc, r, g, b)`, `PrawnEx.set_stroking_rgb(doc
 
 ## Demo
 
-Generate the demo PDF:
+Generate the main tour PDF:
 
 ```bash
 mix run scripts/gen_demo.exs
 ```
 
-Output: `output/prawn_ex_demo.pdf` (4 pages: hero, table, charts, images). Page 4 shows **JPEG** (`demo.jpg` or a tiny embedded fallback) and **PNG** (`assets/demo.png` is included; falls back to a test fixture if `demo.png` is missing). Set `config :prawn_ex, image_dir: "path/to/images"` in `config/config.exs` if you keep assets elsewhere.
+Output: `output/prawn_ex_demo.pdf` (5 pages: hero, table, charts, images, **Layout**). Page 4 shows **JPEG** / **PNG**; page 5 uses **`PrawnEx.Layout`** (Phase A + **hstack** teaser). Full **Phase A–D** walk-through (vstack, hstack, **region + new page**, **Markup**): 
+
+```bash
+mix run scripts/layout_phases_demo.exs
+```
+
+→ `output/layout_phases_demo.pdf` (expect at least two pages so Phase C is visible). Set `config :prawn_ex, image_dir: "path/to/images"` in `config/config.exs` if you keep assets elsewhere.
 
 ### Examples
 
