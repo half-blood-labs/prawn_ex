@@ -6,7 +6,7 @@
 [![Hex.pm](https://img.shields.io/hexpm/l/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
 [![Elixir](https://img.shields.io/badge/elixir-%3E%3D%201.16-purple)](https://elixir-lang.org)
 
-**Version** 0.1.1 · **Elixir** ~> 1.16
+**Version** 0.2.0 · **Elixir** ~> 1.16
 
 Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML: build a document spec and emit PDF 1.4.
 
@@ -30,7 +30,7 @@ Add the dependency and build your first PDF:
 ```elixir
 # mix.exs
 def deps do
-  [{:prawn_ex, "~> 0.1.0"}]
+  [{:prawn_ex, "~> 0.2.0"}]
 end
 ```
 
@@ -179,7 +179,7 @@ by adding `prawn_ex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:prawn_ex, "~> 0.1.0"}
+    {:prawn_ex, "~> 0.2.0"}
   ]
 end
 ```
