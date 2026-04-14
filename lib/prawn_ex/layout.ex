@@ -138,7 +138,7 @@ defmodule PrawnEx.Layout do
       Keyword.get(opts, :font_size, if(level == 2, do: 14, else: 20))
 
     lead = Keyword.get(opts, :lead, 1.0)
-    gap_after = Keyword.get(opts, :gap_after, 6)
+    gap_after = Keyword.get(opts, :gap_after, if(level == 2, do: 10, else: 8))
 
     lowest = l.cursor_y - size * 1.15
     l = maybe_break_for_extent(l, lowest)
@@ -162,7 +162,7 @@ defmodule PrawnEx.Layout do
     font_size = Keyword.get(opts, :font_size, 10)
     line_height = Keyword.get(opts, :line_height, font_size * 1.2)
     width = Keyword.get(opts, :width, l.content_width)
-    gap_after = Keyword.get(opts, :gap_after, 8)
+    gap_after = Keyword.get(opts, :gap_after, 10)
 
     lines = Text.wrap_to_lines(text, width, font_size)
 
@@ -302,12 +302,15 @@ defmodule PrawnEx.Layout do
   column; merge the returned `doc` and advance the outer cursor by the **deepest** column drop plus
   `:row_gap_after` (default 8).
 
-  Options: `:gap` between columns (default 8), `:row_gap_after` (default 8).
+  Options: `:gap` between columns (default 8), `:row_gap_after` (default 10),
+  `:min_row_depth` — minimum vertical budget in pt for the row (default 22). Short columns
+  only move the cursor by `gap_after` pixels; without a floor, the next block can overlap the row.
   """
   @spec hstack(t(), [{number(), (t() -> t())}], keyword()) :: t()
   def hstack(%__MODULE__{} = l, columns, opts \\ []) when is_list(columns) do
     gap = Keyword.get(opts, :gap, 8)
-    row_gap_after = Keyword.get(opts, :row_gap_after, 8)
+    row_gap_after = Keyword.get(opts, :row_gap_after, 10)
+    min_row_depth = Keyword.get(opts, :min_row_depth, 22)
     row_top_y = l.cursor_y
 
     {doc, max_drop} =
@@ -328,7 +331,8 @@ defmodule PrawnEx.Layout do
         {out.doc, max(max_drop, drop)}
       end)
 
-    %{l | doc: doc, cursor_y: row_top_y - max_drop - row_gap_after}
+    effective_drop = max(max_drop, min_row_depth)
+    %{l | doc: doc, cursor_y: row_top_y - effective_drop - row_gap_after}
   end
 
   defp hstack_prefix_width(columns, gap, i) do

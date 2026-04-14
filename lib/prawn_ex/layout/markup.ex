@@ -6,7 +6,7 @@ defmodule PrawnEx.Layout.Markup do
 
   - `# title` — level-1 heading (single line).
   - `## title` — level-2 heading (smaller font).
-  - `- item` — bullet line; consecutive `-` lines form one paragraph with `• ` prefixes.
+  - `- item` — bullet line; consecutive `-` lines form one paragraph with ASCII `* ` line prefixes (PDF-safe).
   - Blank line — ends the current paragraph or bullet group.
   - Other lines — accumulate into a plain paragraph until blank or heading.
 
@@ -158,10 +158,11 @@ defmodule PrawnEx.Layout.Markup do
   end
 
   defp flush_buf(acc, :bullet_buf, buf) do
+    # ASCII "* " so built-in PDF fonts (Helvetica WinAnsi) do not mojibake Unicode bullets.
     text =
       buf
       |> Enum.reverse()
-      |> Enum.map_join("\n", &("• " <> &1))
+      |> Enum.map_join("\n", &("* " <> &1))
 
     [{:paragraph, text, []} | acc]
   end

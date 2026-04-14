@@ -128,7 +128,7 @@ For documents that are mostly **stacked blocks** (title, paragraphs, table), a p
 - **`escape(layout, fn doc, ctx -> {doc, new_cursor_y} end)`** — one-off coordinates; `ctx` has `:cursor_y`, `:content_left`, `:content_width`, `:page_w`, `:page_h`, `:margins`.
 - **`to_doc(layout)`** — unwrap for `PrawnEx.to_binary/1` or the end of a `build/3` callback.
 
-**Markup (Phase D)** — `PrawnEx.Layout.Markup.parse/1` and **`apply(layout, string, vstack_opts)`**: lines starting with `# ` / `## ` for headings, `- ` bullets, blank lines separate paragraphs. Not a full Markdown engine.
+**Markup (Phase D)** — `PrawnEx.Layout.Markup.parse/1` and **`apply(layout, string, vstack_opts)`**: lines starting with `# ` / `## ` for headings, `- ` bullets (rendered as ASCII `* ` lines for built-in font encodings), blank lines separate paragraphs. Not a full Markdown engine.
 
 See `mix run scripts/invoice.exs` for layout without markup.
 

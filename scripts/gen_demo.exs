@@ -135,7 +135,7 @@ footer_y = 48
           ["Headers / footers", "Done", "Per-page callback, page number"],
           ["Charts", "Done", "Bar & line charts (Phase 3)"],
           ["Images", "Done", "JPEG (DCT) & PNG (Flate) XObjects"],
-          ["Layout", "Done", "Flow, vstack, hstack, region, Markup — see layout_phases_demo.pdf"]
+          ["Layout", "Done", "Flow, vstack, hstack, region, Markup - see layout_phases_demo.pdf"]
         ],
         at: {margin, page_h - 130},
         column_widths: [120, 80, 280],
@@ -163,7 +163,7 @@ footer_y = 48
       |> PrawnEx.set_non_stroking_gray(0.5)
       |> PrawnEx.text_at(
         {margin, page_h - 85},
-        "Bar and line charts from drawing primitives — no external deps"
+        "Bar and line charts from drawing primitives - no external deps"
       )
       |> PrawnEx.set_non_stroking_gray(0)
       |> PrawnEx.set_font("Helvetica", 11)
@@ -195,7 +195,7 @@ footer_y = 48
       |> PrawnEx.set_non_stroking_gray(0.5)
       |> PrawnEx.text_at(
         {margin, page_h - 85},
-        "JPEG (/DCTDecode) and PNG (/FlateDecode) — file path or raw binary"
+        "JPEG (/DCTDecode) and PNG (/FlateDecode) - file path or raw binary"
       )
       |> PrawnEx.set_non_stroking_gray(0)
       |> PrawnEx.set_font("Helvetica", 11)
@@ -243,7 +243,7 @@ footer_y = 48
       |> PrawnEx.set_non_stroking_gray(0.5)
       |> PrawnEx.text_at(
         {margin, page_h - 460},
-        "config :prawn_ex, image_dir: \"assets\" — demo.png is included; add demo.jpg for your own JPEG"
+        "config :prawn_ex, image_dir: \"assets\" - demo.png is included; add demo.jpg for your own JPEG"
       )
       |> PrawnEx.set_non_stroking_gray(0)
       # —— Page 5: Layout Phase A + Phase B teaser (see layout_phases_demo.exs for B/C/D) ——
@@ -256,7 +256,7 @@ footer_y = 48
         )
         |> PrawnEx.Layout.heading("Layout (flow)", font_size: 18, gap_after: 10)
         |> PrawnEx.Layout.paragraph(
-          "Phase A: margin box + cursor (no manual page_h arithmetic). Phases B–D — vstack, hstack, region + automatic new page, and line markup — are shown in output/layout_phases_demo.pdf. Run: mix run scripts/layout_phases_demo.exs",
+          "Phase A: margin box + cursor (no manual page_h arithmetic). Phases B-D: vstack, hstack, region + automatic new page, and line markup are in output/layout_phases_demo.pdf. Run: mix run scripts/layout_phases_demo.exs",
           font_size: 10,
           line_height: 13,
           gap_after: 10
