@@ -2,6 +2,7 @@ defmodule PrawnEx.LayoutTest do
   use ExUnit.Case, async: true
 
   alias PrawnEx.Layout
+  alias PrawnEx.Layout.Markup
 
   test "attach sets cursor below top margin and content width" do
     doc = PrawnEx.Document.new(page_size: :a4) |> PrawnEx.add_page()
@@ -63,5 +64,86 @@ defmodule PrawnEx.LayoutTest do
     assert l.cursor_y == 842 - 50 - 20
     bin = Layout.to_doc(l) |> PrawnEx.to_binary()
     assert bin =~ "(X)"
+  end
+
+  test "vstack runs multiple flow blocks" do
+    doc = PrawnEx.Document.new() |> PrawnEx.add_page()
+
+    l =
+      Layout.attach(doc, margins: %{top: 60, left: 50, right: 50, bottom: 50})
+      |> Layout.vstack(
+        [
+          {:heading, "A", [font_size: 14]},
+          {:paragraph, "Body", [font_size: 10, gap_after: 4]},
+          {:spacer, 6},
+          {:heading, "B", [font_size: 14]}
+        ],
+        gap: 4
+      )
+
+    bin = Layout.to_doc(l) |> PrawnEx.to_binary()
+    assert bin =~ "(A)"
+    assert bin =~ "(Body)"
+    assert bin =~ "(B)"
+  end
+
+  test "hstack places text in two columns" do
+    doc = PrawnEx.Document.new() |> PrawnEx.add_page()
+
+    l =
+      Layout.attach(doc, margins: %{top: 60, left: 50, right: 50, bottom: 50})
+      |> Layout.hstack(
+        [
+          {120, fn col -> Layout.paragraph(col, "Left", font_size: 10, gap_after: 2) end},
+          {120, fn col -> Layout.paragraph(col, "Right", font_size: 10, gap_after: 2) end}
+        ],
+        gap: 10
+      )
+
+    bin = Layout.to_doc(l) |> PrawnEx.to_binary()
+    assert bin =~ "(Left)"
+    assert bin =~ "(Right)"
+  end
+
+  test "region with new page adds a second page when paragraph crosses floor" do
+    doc = PrawnEx.Document.new() |> PrawnEx.add_page()
+
+    l =
+      Layout.attach(doc,
+        margins: %{top: 60, left: 50, right: 50, bottom: 50},
+        region: %{floor_y: 120},
+        on_overflow: :new_page
+      )
+      |> Layout.spacer(700)
+      |> Layout.paragraph("After break", font_size: 12, line_height: 14, gap_after: 4)
+
+    assert length(Layout.to_doc(l).pages) == 2
+    bin = Layout.to_doc(l) |> PrawnEx.to_binary()
+    assert bin =~ "After break"
+  end
+
+  test "Markup.parse builds heading and paragraph blocks" do
+    blocks =
+      Markup.parse("""
+      # Title
+
+      Hello world.
+      """)
+
+    assert Enum.any?(blocks, &match?({:heading, "Title", _}, &1))
+    assert Enum.any?(blocks, &match?({:paragraph, "Hello world.", _}, &1))
+  end
+
+  test "Markup.apply renders into PDF" do
+    doc = PrawnEx.Document.new() |> PrawnEx.add_page()
+
+    bin =
+      Layout.attach(doc, margins: %{top: 60, left: 50, right: 50, bottom: 50})
+      |> Markup.apply("# Doc\n\nHi.", gap: 4)
+      |> Layout.to_doc()
+      |> PrawnEx.to_binary()
+
+    assert bin =~ "(Doc)"
+    assert bin =~ "(Hi.)"
   end
 end
