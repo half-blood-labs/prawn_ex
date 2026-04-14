@@ -96,12 +96,22 @@ defmodule PrawnEx.PDF.Objects do
   end
 
   @doc """
-  Image XObject: stream dict + data. filter: :dct for JPEG.
+  Image XObject: stream dict + data.
+
+  - `filter: :dct` — `data` is a full JPEG bitstream (`/DCTDecode`).
+  - `filter: :flate` — `data` is raw top-to-bottom RGB pixels (`/FlateDecode`).
   """
   def image_xobject(width, height, data, filter: :dct) do
     len = byte_size(data)
 
     "<< /Type /XObject /Subtype /Image /Width #{width} /Height #{height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length #{len} >>\nstream\n#{data}\nendstream"
+  end
+
+  def image_xobject(width, height, data, filter: :flate) do
+    compressed = :zlib.compress(data)
+    len = byte_size(compressed)
+
+    "<< /Type /XObject /Subtype /Image /Width #{width} /Height #{height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length #{len} >>\nstream\n#{compressed}\nendstream"
   end
 
   @doc """

@@ -10,8 +10,8 @@ defmodule PrawnEx do
 
       config :prawn_ex, image_dir: "priv/images"
 
-  Relative paths passed to `image/3` (e.g. `"photo.jpg"`) are then resolved from that directory.
-  Absolute paths and raw JPEG binaries are used as-is.
+  Relative paths passed to `image/3` (e.g. `"photo.jpg"`, `"logo.png"`) are then resolved from that directory.
+  Absolute paths and raw JPEG or PNG binaries are used as-is.
 
   ## Example
 
@@ -23,7 +23,7 @@ defmodule PrawnEx do
         |> PrawnEx.stroke()
       end)
 
-  See module docs for `PrawnEx.Document` and `PrawnEx.Units`.
+  See module docs for `PrawnEx.Document`, `PrawnEx.Units`, and `PrawnEx.Layout` (flow helpers on top of this API).
   """
 
   alias PrawnEx.Document
@@ -218,7 +218,10 @@ defmodule PrawnEx do
   end
 
   @doc """
-  Embeds an image (JPEG) at the given position. `path_or_binary` is a file path or JPEG binary.
+  Embeds an image at the given position. `path_or_binary` is a file path or image binary.
+
+  Supported formats: **JPEG** (embedded as DCT) and **PNG** (8-bit RGB or RGBA, non-interlaced;
+  RGBA is composited on white). Other formats return `{:error, :unsupported_image_format}`.
 
   If `path_or_binary` is a relative path, it is resolved against the configured image directory
   (see "Image / asset path" in the module docs). Set `config :prawn_ex, image_dir: "priv/images"`
@@ -245,12 +248,39 @@ defmodule PrawnEx do
     end
   end
 
-  defp load_image(path_or_binary), do: PrawnEx.Image.JPEG.load(path_or_binary)
+  defp load_image(path_or_binary) do
+    with {:ok, bytes} <- read_image_bytes(path_or_binary) do
+      cond do
+        jpeg_bytes?(bytes) -> PrawnEx.Image.JPEG.load(bytes)
+        png_bytes?(bytes) -> PrawnEx.Image.PNG.load(bytes)
+        true -> {:error, :unsupported_image_format}
+      end
+    end
+  end
+
+  defp read_image_bytes(data) when is_binary(data) do
+    cond do
+      jpeg_bytes?(data) or png_bytes?(data) ->
+        {:ok, data}
+
+      true ->
+        File.read(data)
+    end
+  end
+
+  defp jpeg_bytes?(<<0xFF, 0xD8, _::binary>>), do: true
+  defp jpeg_bytes?(_), do: false
+
+  defp png_bytes?(data) when byte_size(data) >= 8 do
+    binary_part(data, 0, 8) == <<137, 80, 78, 71, 13, 10, 26, 10>>
+  end
+
+  defp png_bytes?(_), do: false
 
   # Resolve relative paths against config :prawn_ex, :image_dir (asset path for users of the dep).
   defp resolve_image_path(path_or_binary) when is_binary(path_or_binary) do
     cond do
-      byte_size(path_or_binary) >= 2 and binary_part(path_or_binary, 0, 2) == <<0xFF, 0xD8>> ->
+      jpeg_bytes?(path_or_binary) or png_bytes?(path_or_binary) ->
         path_or_binary
 
       Path.type(path_or_binary) == :absolute ->

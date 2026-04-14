@@ -80,8 +80,22 @@ defmodule PrawnEx.PDF.Writer do
         spec = Enum.at(images, id - 1)
         pdf_id = image_id_to_pdf_id[id]
 
-        if spec && spec.filter == :dct do
-          body = Objects.image_xobject(spec.width, spec.height, spec.data, filter: :dct)
+        body =
+          cond do
+            spec == nil ->
+              ""
+
+            spec.filter == :dct ->
+              Objects.image_xobject(spec.width, spec.height, spec.data, filter: :dct)
+
+            spec.filter == :flate ->
+              Objects.image_xobject(spec.width, spec.height, spec.data, filter: :flate)
+
+            true ->
+              ""
+          end
+
+        if body != "" do
           "#{pdf_id} 0 obj\n#{body}\nendobj\n"
         else
           ""

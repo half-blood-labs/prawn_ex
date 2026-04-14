@@ -166,6 +166,36 @@ defmodule PrawnExTest do
     assert binary =~ "/DCTDecode"
   end
 
+  test "PNG fixture decodes to RGB and flate spec" do
+    path = Path.expand("fixtures/tiny_rgb.png", __DIR__)
+
+    assert {:ok, %{width: 2, height: 2, filter: :flate, data: rgb}} = PrawnEx.Image.PNG.load(path)
+    assert byte_size(rgb) == 2 * 2 * 3
+  end
+
+  test "image/3 embeds PNG with FlateDecode XObject" do
+    png_path = Path.expand("fixtures/tiny_rgb.png", __DIR__)
+
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.image(png_path, at: {40, 200}, width: 24, height: 24)
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    assert binary =~ "/Subtype /Image"
+    assert binary =~ "/FlateDecode"
+  end
+
+  test "image/3 rejects non-image file bytes" do
+    path = Path.join(System.tmp_dir!(), "prawn_ex_not_img_#{:erlang.unique_integer([:positive])}")
+    on_exit(fn -> File.rm(path) end)
+    :ok = File.write(path, "not an image")
+
+    assert {:error, :unsupported_image_format} =
+             PrawnEx.image(PrawnEx.Document.new() |> PrawnEx.add_page(), path, at: {0, 0})
+  end
+
   test "text_box/3 wraps text and emits multiple lines" do
     # Text that must wrap (narrow width) so we get at least 2 lines
     long_text = "The quick brown fox jumps over the lazy dog and runs away."
