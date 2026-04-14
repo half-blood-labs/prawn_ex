@@ -66,7 +66,7 @@ defmodule PrawnEx.PDF.Objects do
       |> Enum.with_index(1)
       |> Enum.map(fn {name, i} ->
         base = "/" <> name
-        "/F#{i} << /Type /Font /Subtype /Type1 /BaseFont #{base} >>"
+        "/F#{i} << /Type /Font /Subtype /Type1 /BaseFont #{base} /Encoding /WinAnsiEncoding >>"
       end)
       |> Enum.join(" ")
 
@@ -84,7 +84,7 @@ defmodule PrawnEx.PDF.Objects do
       |> Enum.with_index(1)
       |> Enum.map(fn {name, i} ->
         base = "/" <> name
-        "/F#{i} << /Type /Font /Subtype /Type1 /BaseFont #{base} >>"
+        "/F#{i} << /Type /Font /Subtype /Type1 /BaseFont #{base} /Encoding /WinAnsiEncoding >>"
       end)
       |> Enum.join(" ")
 
