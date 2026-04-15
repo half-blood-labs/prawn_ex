@@ -7,6 +7,7 @@ defmodule PrawnEx.Table do
   """
 
   alias PrawnEx.Document
+  alias PrawnEx.Font
   alias PrawnEx.Units
 
   @doc """
@@ -23,6 +24,7 @@ defmodule PrawnEx.Table do
   - `:font_size` - body font size (default 10)
   - `:header_font_size` - header row font size (default 11)
   - `:align` - cell alignment: `:left` (default), `:center`, or `:right` for all cells; or a list per column e.g. `[:left, :center, :right]`
+  - `:font_name` - font used for all cells (default `"Helvetica"`)
   - `:page_size` - for `:auto` column widths (default :a4)
 
   ## Examples
@@ -39,6 +41,7 @@ defmodule PrawnEx.Table do
     cell_padding = Keyword.get(opts, :cell_padding, 6)
     header? = Keyword.get(opts, :header, true)
     border? = Keyword.get(opts, :border, true)
+    font_name = Keyword.get(opts, :font_name, "Helvetica")
     font_size = Keyword.get(opts, :font_size, 10)
     header_font_size = Keyword.get(opts, :header_font_size, 11)
     align = Keyword.get(opts, :align, :left)
@@ -52,6 +55,7 @@ defmodule PrawnEx.Table do
     draw_rows(doc, rows, at_x, at_y, column_widths, row_height, cell_padding, %{
       header?: header?,
       border?: border?,
+      font_name: font_name,
       font_size: font_size,
       header_font_size: header_font_size,
       align_list: align_list
@@ -105,6 +109,7 @@ defmodule PrawnEx.Table do
       draw_row_cells(acc, row, at_x, y_bottom, col_widths, row_height, padding, %{
         is_header: is_header,
         border?: border?,
+        font_name: opts.font_name,
         font_size: if(is_header, do: header_font_size, else: font_size),
         align_list: opts.align_list
       })
@@ -114,6 +119,7 @@ defmodule PrawnEx.Table do
   defp draw_row_cells(doc, row, x_start, y_bottom, col_widths, row_height, padding, opts) do
     is_header = opts.is_header
     border? = opts.border?
+    font_name = opts.font_name
     font_size = opts.font_size
     align_list = opts.align_list || List.duplicate(:left, length(col_widths))
 
@@ -135,7 +141,7 @@ defmodule PrawnEx.Table do
       Enum.with_index(Enum.zip(Enum.zip(row, col_widths), align_list))
       |> Enum.reduce(doc, fn {{{cell_text, col_w}, align}, j}, d ->
         cell_x = x_start + (Enum.take(col_widths, j) |> Enum.sum())
-        text_x = text_x_for_align(cell_x, col_w, padding, font_size, cell_text, align)
+        text_x = text_x_for_align(cell_x, col_w, padding, font_name, font_size, cell_text, align)
         text_y = y_bottom + padding
 
         d =
@@ -150,30 +156,24 @@ defmodule PrawnEx.Table do
           end
 
         d
-        |> Document.append_op({:set_font, "Helvetica", font_size})
+        |> Document.append_op({:set_font, font_name, font_size})
         |> Document.append_op({:text_at, {text_x, text_y}, cell_text})
       end)
 
     doc
   end
 
-  # Approximate text width for Helvetica: ~0.5 pt per unit of font size per character
-  defp text_x_for_align(cell_x, _col_w, padding, _font_size, _text, :left) do
+  defp text_x_for_align(cell_x, _col_w, padding, _font_name, _font_size, _text, :left) do
     cell_x + padding
   end
 
-  defp text_x_for_align(cell_x, col_w, _padding, font_size, text, :center) do
-    est_w = estimated_text_width(text, font_size)
-    cell_x + max(0, (col_w - est_w) / 2)
+  defp text_x_for_align(cell_x, col_w, _padding, font_name, font_size, text, :center) do
+    tw = Font.text_width(font_name, text, font_size)
+    cell_x + max(0, (col_w - tw) / 2)
   end
 
-  defp text_x_for_align(cell_x, col_w, padding, font_size, text, :right) do
-    est_w = estimated_text_width(text, font_size)
-    cell_x + col_w - padding - est_w
-  end
-
-  defp estimated_text_width(text, font_size) when is_binary(text) do
-    # Helvetica-like: ~0.5 pt per character per unit font size
-    String.length(text) * font_size * 0.5
+  defp text_x_for_align(cell_x, col_w, padding, font_name, font_size, text, :right) do
+    tw = Font.text_width(font_name, text, font_size)
+    cell_x + col_w - padding - tw
   end
 end

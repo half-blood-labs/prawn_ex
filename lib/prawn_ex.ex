@@ -23,10 +23,25 @@ defmodule PrawnEx do
         |> PrawnEx.stroke()
       end)
 
-  See module docs for `PrawnEx.Document`, `PrawnEx.Units`, and `PrawnEx.Layout` (flow helpers on top of this API).
+  ## Text alignment
+
+  `text_box/3` accepts an `:align` option (`:left` | `:center` | `:right`, default `:left`).
+  Per-line x positions are calculated with precise AFM font metrics via `PrawnEx.Font.text_width/3`,
+  so alignment is accurate for the five built-in PDF fonts (Helvetica, Helvetica-Bold,
+  Times-Roman, Times-Bold, Courier).
+
+      doc
+      |> PrawnEx.text_box("Right-aligned", at: {50, 700}, width: 495, align: :right)
+
+  `PrawnEx.Layout.heading/3` and `PrawnEx.Layout.paragraph/3` both accept `:align` and
+  propagate it automatically.
+
+  See module docs for `PrawnEx.Document`, `PrawnEx.Font`, `PrawnEx.Units`, and `PrawnEx.Layout`
+  (flow helpers on top of this API).
   """
 
   alias PrawnEx.Document
+  alias PrawnEx.Font
   alias PrawnEx.PDF.Writer
 
   @doc """
@@ -97,6 +112,7 @@ defmodule PrawnEx do
   - `:font_name` - default `"Helvetica"`
   - `:font_size` - default `12`
   - `:line_height` - default `1.2 * font_size`
+  - `:align` - `:left` (default), `:center`, or `:right`
   """
   @spec text_box(Document.t(), String.t(), keyword()) :: Document.t()
   def text_box(doc, text, opts) do
@@ -105,9 +121,10 @@ defmodule PrawnEx do
     font_name = Keyword.get(opts, :font_name, "Helvetica")
     font_size = Keyword.get(opts, :font_size, 12)
     line_height = Keyword.get(opts, :line_height, font_size * 1.2)
+    align = Keyword.get(opts, :align, :left)
 
     {x, y} = at
-    lines = PrawnEx.Text.wrap_to_lines(text, width, font_size)
+    lines = PrawnEx.Text.wrap_to_lines(text, width, font_size, font_name)
 
     if lines == [] do
       doc
@@ -117,10 +134,23 @@ defmodule PrawnEx do
       |> then(fn d ->
         Enum.with_index(lines)
         |> Enum.reduce(d, fn {line, i}, acc ->
-          Document.append_op(acc, {:text_at, {x, y - i * line_height}, line})
+          lx = line_x(x, width, font_name, font_size, line, align)
+          Document.append_op(acc, {:text_at, {lx, y - i * line_height}, line})
         end)
       end)
     end
+  end
+
+  defp line_x(x, _width, _font_name, _font_size, _line, :left), do: x
+
+  defp line_x(x, width, font_name, font_size, line, :center) do
+    lw = Font.text_width(font_name, line, font_size)
+    x + max(0, (width - lw) / 2)
+  end
+
+  defp line_x(x, width, font_name, font_size, line, :right) do
+    lw = Font.text_width(font_name, line, font_size)
+    x + max(0, width - lw)
   end
 
   @doc """

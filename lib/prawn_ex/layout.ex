@@ -12,10 +12,18 @@ defmodule PrawnEx.Layout do
       |> PrawnEx.add_page()
       |> PrawnEx.Layout.attach(page_size: :a4, margins: %{top: 60, left: 50, right: 50, bottom: 50})
       |> PrawnEx.Layout.heading("INVOICE", font_size: 24)
+      |> PrawnEx.Layout.heading("Total: $1,234.00", font_size: 14, align: :right)
       |> PrawnEx.Layout.paragraph("Acme Inc.\\n123 Main St", font_size: 10, line_height: 14)
+      |> PrawnEx.Layout.paragraph("Confidential", align: :right)
       |> PrawnEx.Layout.spacer(24)
       |> PrawnEx.Layout.table(rows, column_widths: [...], header: true, clearance: 24)
       |> PrawnEx.Layout.to_doc()
+
+  ## Text alignment
+
+  `heading/3` and `paragraph/3` both accept `:align` (`:left` | `:center` | `:right`,
+  default `:left`). x positions are computed with `PrawnEx.Font.text_width/3` (AFM metrics),
+  so the result is precise for the five built-in PDF fonts.
 
   Escape hatch for one-off coordinates: `escape/2`.
 
@@ -23,6 +31,7 @@ defmodule PrawnEx.Layout do
   """
 
   alias PrawnEx.Document
+  alias PrawnEx.Font
   alias PrawnEx.Text
   alias PrawnEx.Units
 
@@ -82,8 +91,8 @@ defmodule PrawnEx.Layout do
   end
 
   @doc """
-  Single-line heading. Options: `:font`, `:font_size` (default 20), `:lead` (default 1.25),
-  `:gap_after` (default 8).
+  Single-line heading. Options: `:font`, `:font_size` (default 20), `:lead` (default 1.0),
+  `:gap_after` (default 6), `:align` (`:left` | `:center` | `:right`, default `:left`).
   """
   @spec heading(t(), String.t(), keyword()) :: t()
   def heading(%__MODULE__{} = l, text, opts \\ []) when is_binary(text) do
@@ -91,19 +100,35 @@ defmodule PrawnEx.Layout do
     size = Keyword.get(opts, :font_size, 20)
     lead = Keyword.get(opts, :lead, 1.0)
     gap_after = Keyword.get(opts, :gap_after, 6)
+    align = Keyword.get(opts, :align, :left)
+
+    x = heading_x(l.content_left, l.content_width, font, size, text, align)
 
     doc =
       l.doc
       |> PrawnEx.set_font(font, size)
-      |> PrawnEx.text_at({l.content_left, l.cursor_y}, text)
+      |> PrawnEx.text_at({x, l.cursor_y}, text)
 
     # Next block's first baseline sits `size * lead + gap_after` below this heading's baseline.
     %{l | doc: doc, cursor_y: l.cursor_y - (size * lead + gap_after)}
   end
 
+  defp heading_x(content_left, _content_width, _font, _size, _text, :left), do: content_left
+
+  defp heading_x(content_left, content_width, font, size, text, :center) do
+    tw = Font.text_width(font, text, size)
+    content_left + max(0, (content_width - tw) / 2)
+  end
+
+  defp heading_x(content_left, content_width, font, size, text, :right) do
+    tw = Font.text_width(font, text, size)
+    content_left + max(0, content_width - tw)
+  end
+
   @doc """
   Wrapped paragraph using `PrawnEx.text_box/3`. Options: `:font_name`, `:font_size` (default 10),
-  `:line_height` (default `font_size * 1.2`), `:width` (default content width), `:gap_after` (default 8).
+  `:line_height` (default `font_size * 1.2`), `:width` (default content width), `:gap_after` (default 8),
+  `:align` (`:left` | `:center` | `:right`, default `:left`).
   Preserves newlines like `text_box` / `Text.wrap_to_lines`.
   """
   @spec paragraph(t(), String.t(), keyword()) :: t()
@@ -113,8 +138,9 @@ defmodule PrawnEx.Layout do
     line_height = Keyword.get(opts, :line_height, font_size * 1.2)
     width = Keyword.get(opts, :width, l.content_width)
     gap_after = Keyword.get(opts, :gap_after, 8)
+    align = Keyword.get(opts, :align, :left)
 
-    lines = Text.wrap_to_lines(text, width, font_size)
+    lines = Text.wrap_to_lines(text, width, font_size, font_name)
 
     if lines == [] do
       l
@@ -125,7 +151,8 @@ defmodule PrawnEx.Layout do
           width: width,
           font_name: font_name,
           font_size: font_size,
-          line_height: line_height
+          line_height: line_height,
+          align: align
         )
 
       n = length(lines)

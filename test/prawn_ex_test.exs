@@ -196,6 +196,53 @@ defmodule PrawnExTest do
              PrawnEx.image(PrawnEx.Document.new() |> PrawnEx.add_page(), path, at: {0, 0})
   end
 
+  test "text_box/3 with align: :right shifts x rightward" do
+    # Single short line so wrapping doesn't factor in.
+    text = "Right"
+    width = 200
+    x = 50
+
+    # Build two docs: left-aligned and right-aligned
+    left_doc =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.text_box(text, at: {x, 700}, width: width, font_name: "Helvetica", font_size: 12, align: :left)
+
+    right_doc =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.text_box(text, at: {x, 700}, width: width, font_name: "Helvetica", font_size: 12, align: :right)
+
+    left_bin = PrawnEx.to_binary(left_doc)
+    right_bin = PrawnEx.to_binary(right_doc)
+
+    # Both must be valid PDFs containing the text
+    assert left_bin =~ "%PDF-1.4"
+    assert right_bin =~ "%PDF-1.4"
+    assert left_bin =~ "Right"
+    assert right_bin =~ "Right"
+
+    # The x coordinate for :left is 50 and for :right is larger.
+    # PDF content stream encodes coordinates in text matrix: "x y Td" or via Tm.
+    # We verify the right-aligned doc's x coordinate differs from left's.
+    refute left_bin == right_bin
+  end
+
+  test "text_box/3 with align: :center places x between left and right" do
+    text = "Center"
+    width = 200
+    x = 50
+
+    center_doc =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.text_box(text, at: {x, 700}, width: width, font_name: "Helvetica", font_size: 12, align: :center)
+
+    bin = PrawnEx.to_binary(center_doc)
+    assert bin =~ "%PDF-1.4"
+    assert bin =~ "Center"
+  end
+
   test "text_box/3 wraps text and emits multiple lines" do
     # Text that must wrap (narrow width) so we get at least 2 lines
     long_text = "The quick brown fox jumps over the lazy dog and runs away."

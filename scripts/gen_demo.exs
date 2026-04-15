@@ -244,6 +244,126 @@ footer_y = 48
         "config :prawn_ex, image_dir: \"assets\" — demo.png is included; add demo.jpg for your own JPEG"
       )
       |> PrawnEx.set_non_stroking_gray(0)
+      # —— Page 5: Text alignment ——
+      |> PrawnEx.add_page()
+      |> then(fn doc ->
+        alias PrawnEx.Layout
+
+        # Three labelled boxes across the content width to show left/center/right alignment.
+        box_w = (page_w - 2 * margin - 24) / 3
+        box_h = 90
+        box_y_top = page_h - 140
+        box_y_bottom = box_y_top - box_h
+
+        boxes = [
+          {margin, :left, "Left"},
+          {margin + box_w + 12, :center, "Center"},
+          {margin + 2 * (box_w + 12), :right, "Right"}
+        ]
+
+        doc =
+          doc
+          |> PrawnEx.set_font("Helvetica", 18)
+          |> PrawnEx.text_at({margin, page_h - 60}, "Text Alignment")
+          |> PrawnEx.set_font("Helvetica", 10)
+          |> PrawnEx.set_non_stroking_gray(0.45)
+          |> PrawnEx.text_at(
+            {margin, page_h - 85},
+            "Per-line x offsets calculated with AFM font metrics — precise for all built-in fonts"
+          )
+          |> PrawnEx.set_non_stroking_gray(0)
+
+        # Draw boxes with alignment labels above each
+        doc =
+          Enum.reduce(boxes, doc, fn {bx, _align, label}, d ->
+            d
+            |> PrawnEx.set_stroking_gray(0.75)
+            |> PrawnEx.rectangle(bx, box_y_bottom, box_w, box_h)
+            |> PrawnEx.stroke()
+            |> PrawnEx.set_stroking_gray(0)
+            |> PrawnEx.set_font("Helvetica", 9)
+            |> PrawnEx.set_non_stroking_gray(0.45)
+            |> PrawnEx.text_at({bx, box_y_top + 10}, "align: :#{label |> String.downcase()}")
+            |> PrawnEx.set_non_stroking_gray(0)
+          end)
+
+        # Draw wrapped text inside each box with the corresponding alignment
+        doc =
+          Enum.reduce(boxes, doc, fn {bx, align, label}, d ->
+            PrawnEx.text_box(d, "#{label}-aligned text. It wraps neatly.",
+              at: {bx + 6, box_y_top - 10},
+              width: box_w - 12,
+              font_name: "Helvetica",
+              font_size: 10,
+              line_height: 14,
+              align: align
+            )
+          end)
+
+        # ── Alignment via Layout helpers ──
+        doc =
+          doc
+          |> PrawnEx.set_font("Helvetica", 11)
+          |> PrawnEx.set_non_stroking_gray(0)
+          |> PrawnEx.text_at({margin, box_y_bottom - 30}, "Layout helpers (heading/3 and paragraph/3):")
+
+        l =
+          doc
+          |> Layout.attach(page_size: :a4, margins: %{top: page_h - (box_y_bottom - 60), left: margin, right: margin, bottom: 60})
+
+        l =
+          l
+          |> Layout.heading("Left heading (default)", font_size: 13, gap_after: 4)
+          |> Layout.heading("Centered heading", font_size: 13, align: :center, gap_after: 4)
+          |> Layout.heading("Right-aligned heading", font_size: 13, align: :right, gap_after: 12)
+          |> Layout.paragraph(
+            "This paragraph is left-aligned (default). Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            font_size: 9,
+            line_height: 13,
+            gap_after: 12
+          )
+          |> Layout.paragraph(
+            "This paragraph is right-aligned. Lorem ipsum dolor sit amet, consectetur adipiscing.",
+            font_size: 9,
+            line_height: 13,
+            align: :right,
+            gap_after: 12
+          )
+          |> Layout.paragraph(
+            "This paragraph is centered. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+            font_size: 9,
+            line_height: 13,
+            align: :center,
+            gap_after: 12
+          )
+
+        # ── Table with per-column alignment ──
+        l =
+          l
+          |> Layout.spacer(16)
+
+        doc = Layout.to_doc(l)
+
+        doc
+        |> PrawnEx.set_font("Helvetica", 11)
+        |> PrawnEx.text_at({margin, l.cursor_y + 16 - 30}, "Table: per-column alignment")
+        |> PrawnEx.table(
+          [
+            ["Item", "Qty", "Unit price", "Total"],
+            ["Elixir licence", "3", "$120.00", "$360.00"],
+            ["Support", "1", "$500.00", "$500.00"],
+            ["Training", "2", "$200.00", "$400.00"]
+          ],
+          at: {margin, l.cursor_y + 16 - 55},
+          column_widths: [180, 50, 100, 100],
+          align: [:left, :center, :right, :right],
+          header: true,
+          font_size: 9,
+          header_font_size: 9,
+          row_height: 22,
+          cell_padding: 6
+        )
+      end)
     end
   )
 
