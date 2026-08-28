@@ -130,6 +130,124 @@ defmodule PrawnExTest do
     assert binary =~ "Mar"
   end
 
+  test "set_line_width/2 emits a w op" do
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.set_line_width(2.5)
+      |> PrawnEx.line({0, 0}, {10, 10})
+      |> PrawnEx.stroke()
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "2.5000 w\n"
+  end
+
+  test "escape_string/1 transliterates Unicode punctuation to WinAnsi" do
+    assert PrawnEx.PDF.Encoder.winansi("a • b — c · d’s") == <<
+             "a ",
+             0x95,
+             " b ",
+             0x97,
+             " c ",
+             0xB7,
+             " d",
+             0x92,
+             "s"
+           >>
+
+    # unmappable codepoints degrade to ?, never to multi-byte mojibake
+    assert PrawnEx.PDF.Encoder.winansi("日本") == "??"
+  end
+
+  test "a bullet renders as a single WinAnsi byte in the content stream" do
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.set_font("Helvetica", 10)
+      |> PrawnEx.text_at({50, 700}, "• point")
+      |> PrawnEx.to_binary()
+
+    assert binary =~ <<0x95, " point">>
+    refute binary =~ "â"
+    assert binary =~ "/WinAnsiEncoding"
+  end
+
+  test "bar_chart/3 accepts an {r, g, b} bar color and draws value labels" do
+    data = [{"Q1", 120}, {"Q2", 90}]
+
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.bar_chart(data,
+        at: {80, 500},
+        width: 300,
+        height: 150,
+        bar_color: {0.04, 0.31, 0.35},
+        value_labels: true,
+        value_formatter: fn v -> "$#{round(v)}k" end
+      )
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    # rg = non-stroking RGB fill op carrying the brand color
+    assert binary =~ "0.31"
+    assert binary =~ " rg\n"
+    assert binary =~ "$120k"
+    assert binary =~ "$90k"
+  end
+
+  test "multi_line_chart/3 draws every series on one shared scale" do
+    binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.multi_line_chart(
+        [
+          %{data: [100, 120, 110], color: {0.9, 0.2, 0.1}, label: "Charges"},
+          %{data: [10, 12, 11], color: 0.5, label: "Collections"}
+        ],
+        at: {80, 500},
+        width: 300,
+        height: 150,
+        from_zero: true
+      )
+      |> PrawnEx.to_binary()
+
+    assert binary =~ "%PDF-1.4"
+    # RG = stroking RGB op for the colored series
+    assert binary =~ " RG\n"
+    # legend labels present
+    assert binary =~ "Charges"
+    assert binary =~ "Collections"
+    # two polylines
+    assert binary |> String.split(" m\n") |> length() >= 3
+  end
+
+  test "multi_line_chart/3 shares the y-scale across series" do
+    # Same data in both series must produce identical polyline geometry;
+    # per-series normalization (the line_chart trap) would too — so use
+    # one big and one small series and assert the small one hugs the
+    # bottom of the box instead of filling it.
+    ops_binary =
+      PrawnEx.Document.new()
+      |> PrawnEx.add_page()
+      |> PrawnEx.multi_line_chart(
+        [%{data: [1000, 1000, 1000]}, %{data: [10, 10, 10]}],
+        at: {0, 150},
+        width: 100,
+        height: 150,
+        padding: 0,
+        from_zero: true,
+        axis: false,
+        legend: false
+      )
+      |> PrawnEx.to_binary()
+
+    # big series sits at y=150 (top), small near y=1.5 — if the small
+    # series were self-normalized it would also sit at the top.
+    assert ops_binary =~ "150"
+    assert ops_binary =~ "1.5"
+  end
+
   test "line_chart/3 draws polyline" do
     data = [10, 25, 15, 40, 35]
 

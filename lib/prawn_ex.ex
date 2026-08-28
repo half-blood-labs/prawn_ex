@@ -186,6 +186,13 @@ defmodule PrawnEx do
   def set_stroking_rgb(doc, r, g, b), do: Document.append_op(doc, {:set_stroking_rgb, r, g, b})
 
   @doc """
+  Sets the stroke (line) width in points for subsequent stroked paths.
+  """
+  @spec set_line_width(Document.t(), number()) :: Document.t()
+  def set_line_width(doc, width) when is_number(width),
+    do: Document.append_op(doc, {:set_line_width, width})
+
+  @doc """
   Adds an external link annotation on the current page. Clicking the rectangle opens the URL.
   `x`, `y` are bottom-left in pt; `width` and `height` define the clickable area.
   """
@@ -215,6 +222,15 @@ defmodule PrawnEx do
     doc = ensure_current_page(doc)
     opts = Keyword.put_new(opts, :at, {50, 600})
     PrawnEx.Chart.line_chart(doc, data, opts)
+  end
+
+  @doc """
+  Draws several lines in one chart box on a shared scale. See
+  `PrawnEx.Chart.multi_line_chart/3` for series shape and options.
+  """
+  @spec multi_line_chart(Document.t(), [map() | keyword()], keyword()) :: Document.t()
+  def multi_line_chart(doc, series, opts \\ []) do
+    PrawnEx.Chart.multi_line_chart(doc, series, opts)
   end
 
   @doc """
