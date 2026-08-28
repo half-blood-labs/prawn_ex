@@ -1,5 +1,6 @@
 # Run with: mix run scripts/gen_demo.exs
-# Writes a beautiful demo PDF (4 pages: hero, table, charts, images) to project's output/ folder.
+# Writes a demo PDF (5 pages: hero, table, charts, images, layout) to output/.
+# For Layout phases B/C/D + markup, see: mix run scripts/layout_phases_demo.exs
 #
 # Images on page 4: "demo.jpg" and "demo.png" resolve via config :prawn_ex, image_dir (default "assets").
 # This repo ships assets/demo.png; add assets/demo.jpg for a custom JPEG, or set image_dir in config.
@@ -133,7 +134,8 @@ footer_y = 48
           ["Tables", "Done", "Header row, borders, column_widths"],
           ["Headers / footers", "Done", "Per-page callback, page number"],
           ["Charts", "Done", "Bar & line charts (Phase 3)"],
-          ["Images", "Done", "JPEG (DCT) & PNG (Flate) XObjects"]
+          ["Images", "Done", "JPEG (DCT) & PNG (Flate) XObjects"],
+          ["Layout", "Done", "Flow, vstack, hstack, region, Markup - see layout_phases_demo.pdf"]
         ],
         at: {margin, page_h - 130},
         column_widths: [120, 80, 280],
@@ -161,7 +163,7 @@ footer_y = 48
       |> PrawnEx.set_non_stroking_gray(0.5)
       |> PrawnEx.text_at(
         {margin, page_h - 85},
-        "Bar and line charts from drawing primitives — no external deps"
+        "Bar and line charts from drawing primitives - no external deps"
       )
       |> PrawnEx.set_non_stroking_gray(0)
       |> PrawnEx.set_font("Helvetica", 11)
@@ -193,7 +195,7 @@ footer_y = 48
       |> PrawnEx.set_non_stroking_gray(0.5)
       |> PrawnEx.text_at(
         {margin, page_h - 85},
-        "JPEG (/DCTDecode) and PNG (/FlateDecode) — file path or raw binary"
+        "JPEG (/DCTDecode) and PNG (/FlateDecode) - file path or raw binary"
       )
       |> PrawnEx.set_non_stroking_gray(0)
       |> PrawnEx.set_font("Helvetica", 11)
@@ -241,9 +243,44 @@ footer_y = 48
       |> PrawnEx.set_non_stroking_gray(0.5)
       |> PrawnEx.text_at(
         {margin, page_h - 460},
-        "config :prawn_ex, image_dir: \"assets\" — demo.png is included; add demo.jpg for your own JPEG"
+        "config :prawn_ex, image_dir: \"assets\" - demo.png is included; add demo.jpg for your own JPEG"
       )
       |> PrawnEx.set_non_stroking_gray(0)
+      # —— Page 5: Layout Phase A + Phase B teaser (see layout_phases_demo.exs for B/C/D) ——
+      |> PrawnEx.add_page()
+      |> then(fn d ->
+        d
+        |> PrawnEx.Layout.attach(
+          page_size: :a4,
+          margins: %{top: 52, left: margin, right: margin, bottom: 52}
+        )
+        |> PrawnEx.Layout.heading("Layout (flow)", font_size: 18, gap_after: 10)
+        |> PrawnEx.Layout.paragraph(
+          "Phase A: margin box + cursor (no manual page_h arithmetic). Phases B-D: vstack, hstack, region + automatic new page, and line markup are in output/layout_phases_demo.pdf. Run: mix run scripts/layout_phases_demo.exs",
+          font_size: 10,
+          line_height: 13,
+          gap_after: 10
+        )
+        |> PrawnEx.Layout.paragraph("Phase B preview: hstack (two columns).",
+          font_size: 10,
+          line_height: 13,
+          gap_after: 6
+        )
+        |> PrawnEx.Layout.hstack(
+          [
+            {220,
+             fn col ->
+               PrawnEx.Layout.paragraph(col, "Left column", font_size: 9, gap_after: 2)
+             end},
+            {220,
+             fn col ->
+               PrawnEx.Layout.paragraph(col, "Right column", font_size: 9, gap_after: 2)
+             end}
+          ],
+          gap: 10
+        )
+        |> PrawnEx.Layout.to_doc()
+      end)
     end
   )
 

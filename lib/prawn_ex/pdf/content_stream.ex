@@ -90,6 +90,10 @@ defmodule PrawnEx.PDF.ContentStream do
     {acc <> Encoder.number(g) <> " g\n", font_map}
   end
 
+  defp emit_op({:set_line_width, w}, {acc, font_map}) do
+    {acc <> Encoder.number(w * 1.0) <> " w\n", font_map}
+  end
+
   defp emit_op({:set_stroking_gray, g}, {acc, font_map}) do
     {acc <> Encoder.number(g) <> " G\n", font_map}
   end
