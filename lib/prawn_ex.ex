@@ -242,28 +242,13 @@ defmodule PrawnEx do
   """
   def fill_stroke(doc), do: Document.append_op(doc, :fill_stroke)
 
-  @rounded_kappa 0.5523
   @doc """
   Appends a rounded-rectangle path (Bézier corners). Like
   `rectangle/5` it only builds the path — follow with `fill/1`,
   `stroke/1`, or `fill_stroke/1`.
   """
-  def rounded_rectangle(doc, x, y, w, h, radius) do
-    r = min(radius, min(w, h) / 2)
-    k = @rounded_kappa * r
-
-    doc
-    |> move_to({x + r, y})
-    |> line_to({x + w - r, y})
-    |> curve_to({x + w - r + k, y}, {x + w, y + r - k}, {x + w, y + r})
-    |> line_to({x + w, y + h - r})
-    |> curve_to({x + w, y + h - r + k}, {x + w - r + k, y + h}, {x + w - r, y + h})
-    |> line_to({x + r, y + h})
-    |> curve_to({x + r - k, y + h}, {x, y + h - r + k}, {x, y + h - r})
-    |> line_to({x, y + r})
-    |> curve_to({x, y + r - k}, {x + r - k, y}, {x + r, y})
-    |> close_path()
-  end
+  def rounded_rectangle(doc, x, y, w, h, radius),
+    do: PrawnEx.Shapes.rounded_rect(doc, x, y, w, h, radius)
 
   @doc """
   Sets the stroke (line) width in points for subsequent stroked paths.

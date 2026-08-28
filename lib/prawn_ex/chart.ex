@@ -39,6 +39,8 @@ defmodule PrawnEx.Chart do
     show_labels = Keyword.get(opts, :labels, true)
     label_font_size = Keyword.get(opts, :label_font_size, 9)
     padding = Keyword.get(opts, :padding, 12)
+    corner_radius = Keyword.get(opts, :corner_radius, 0)
+    font = Keyword.get(opts, :font, "Helvetica")
 
     items = normalize_bar_data(data)
     values = Enum.map(items, fn {_l, v} -> v end)
@@ -81,7 +83,14 @@ defmodule PrawnEx.Chart do
 
         acc
         |> set_fill_color(bar_color)
-        |> Document.append_op({:rectangle, bar_left, bar_bottom, bar_w, bar_h})
+        |> PrawnEx.Shapes.rounded_rect(
+          bar_left,
+          bar_bottom,
+          bar_w,
+          bar_h,
+          # A radius taller than the bar would bulge past the baseline.
+          min(corner_radius, bar_h / 2)
+        )
         |> Document.append_op(:fill)
         |> Document.append_op({:set_non_stroking_gray, 0})
         |> then(fn d ->
@@ -90,7 +99,7 @@ defmodule PrawnEx.Chart do
             label_x = bar_left + bar_w / 2 - 8
 
             d
-            |> Document.append_op({:set_font, "Helvetica", label_font_size})
+            |> Document.append_op({:set_font, font, label_font_size})
             |> Document.append_op({:text_at, {label_x, label_y}, to_string(label)})
           else
             d
@@ -106,7 +115,7 @@ defmodule PrawnEx.Chart do
             value_y = bar_bottom + bar_h + 5
 
             d
-            |> Document.append_op({:set_font, "Helvetica", value_font_size})
+            |> Document.append_op({:set_font, font, value_font_size})
             |> Document.append_op({:text_at, {value_x, value_y}, text})
           else
             d
@@ -250,6 +259,7 @@ defmodule PrawnEx.Chart do
     padding = Keyword.get(opts, :padding, 12)
     from_zero = Keyword.get(opts, :from_zero, false)
     show_legend = Keyword.get(opts, :legend, true)
+    font = Keyword.get(opts, :font, "Helvetica")
     legend_font_size = Keyword.get(opts, :legend_font_size, 8)
 
     series = Enum.map(series, &normalize_series/1)
@@ -312,7 +322,7 @@ defmodule PrawnEx.Chart do
       labeled = Enum.filter(series, & &1.label)
 
       if show_legend and labeled != [] do
-        draw_legend(doc, labeled, chart_left, at_y - 2, legend_font_size)
+        draw_legend(doc, labeled, chart_left, at_y - 2, legend_font_size, font)
       else
         doc
       end
@@ -332,7 +342,7 @@ defmodule PrawnEx.Chart do
   # A small ramp so unstyled series stay distinguishable in grayscale.
   defp default_series_color(i), do: rem(i, 4) * 0.2
 
-  defp draw_legend(doc, labeled, x, y, font_size) do
+  defp draw_legend(doc, labeled, x, y, font_size, font) do
     {doc, _x} =
       labeled
       |> Enum.with_index()
@@ -340,10 +350,16 @@ defmodule PrawnEx.Chart do
         doc =
           doc
           |> set_fill_color(color || default_series_color(i))
-          |> Document.append_op({:rectangle, cx, y - font_size + 2, font_size - 1, font_size - 1})
+          |> PrawnEx.Shapes.rounded_rect(
+            cx,
+            y - font_size + 2,
+            font_size - 1,
+            font_size - 1,
+            (font_size - 1) / 4
+          )
           |> Document.append_op(:fill)
           |> Document.append_op({:set_non_stroking_gray, 0.25})
-          |> Document.append_op({:set_font, "Helvetica", font_size})
+          |> Document.append_op({:set_font, font, font_size})
           |> Document.append_op({:text_at, {cx + font_size + 3, y - font_size + 2}, label})
           |> Document.append_op({:set_non_stroking_gray, 0})
 

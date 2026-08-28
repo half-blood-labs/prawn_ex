@@ -120,6 +120,77 @@ defmodule PrawnEx.FontEmbeddingTest do
     end
   end
 
+  describe "charts in an embedded typeface" do
+    test "bar_chart honours :font and :corner_radius" do
+      pdf =
+        PrawnEx.Document.new()
+        |> PrawnEx.add_page()
+        |> PrawnEx.register_font("TestSans", synthetic_ttf())
+        |> PrawnEx.bar_chart([{"A", 10}, {"B", 20}],
+          at: {50, 700},
+          width: 400,
+          height: 150,
+          font: "TestSans",
+          corner_radius: 4
+        )
+        |> PrawnEx.to_binary()
+
+      # The axis labels resolve to the embedded font, not a base-14 stand-in.
+      assert pdf =~ "/BaseFont /TestSans"
+      refute pdf =~ "/BaseFont /Helvetica"
+      # Rounded bars mean Bézier corners in the content stream.
+      assert pdf =~ " c\n"
+    end
+
+    test "a zero corner radius still draws plain rectangles" do
+      pdf =
+        PrawnEx.Document.new()
+        |> PrawnEx.add_page()
+        |> PrawnEx.bar_chart([{"A", 10}], at: {50, 700}, width: 200, height: 100)
+        |> PrawnEx.to_binary()
+
+      assert pdf =~ " re\n"
+    end
+
+    test "the corner radius never exceeds half a short bar" do
+      # A bar 2pt tall asked for a 6pt radius must not bulge past its base.
+      pdf =
+        PrawnEx.Document.new()
+        |> PrawnEx.add_page()
+        |> PrawnEx.bar_chart([{"tall", 100}, {"tiny", 1}],
+          at: {50, 700},
+          width: 300,
+          height: 120,
+          corner_radius: 6
+        )
+        |> PrawnEx.to_binary()
+
+      assert is_binary(pdf)
+      assert pdf =~ "%PDF-1.4"
+    end
+
+    test "multi_line_chart draws its legend in the given font" do
+      pdf =
+        PrawnEx.Document.new()
+        |> PrawnEx.add_page()
+        |> PrawnEx.register_font("TestSans", synthetic_ttf())
+        |> PrawnEx.multi_line_chart(
+          [
+            %{data: [1, 2, 3], color: 0.5, label: "A"},
+            %{data: [3, 2, 1], color: {0, 0.4, 0.4}, label: "B"}
+          ],
+          at: {50, 700},
+          width: 400,
+          height: 150,
+          font: "TestSans"
+        )
+        |> PrawnEx.to_binary()
+
+      assert pdf =~ "/BaseFont /TestSans"
+      refute pdf =~ "/BaseFont /Helvetica"
+    end
+  end
+
   describe "opacity and rounded rectangles" do
     test "set_opacity emits an ExtGState and a gs operator" do
       pdf =

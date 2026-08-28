@@ -6,7 +6,7 @@
 [![Hex.pm](https://img.shields.io/hexpm/l/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
 [![Elixir](https://img.shields.io/badge/elixir-%3E%3D%201.16-purple)](https://elixir-lang.org)
 
-**Version** 0.4.0 · **Elixir** ~> 1.16
+**Version** 0.5.0 · **Elixir** ~> 1.16
 
 Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML: build a document spec and emit PDF 1.4.
 
@@ -18,7 +18,7 @@ Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTM
 - **Graphics** — Lines, rectangles, rounded rectangles (Bézier corners), move-to/line-to/curve-to paths; stroke, fill, and fill-stroke.
 - **Colors & opacity** — Gray (stroking and non-stroking) and RGB; `set_opacity/2` for translucent fills and strokes (ExtGState alpha).
 - **Tables** — Grid with optional header row, configurable column widths, row height, padding, borders; **cell alignment** per column (`:left`, `:center`, `:right`).
-- **Charts** — Bar charts and line charts from data (no external deps).
+- **Charts** — Bar charts and line charts from data (no external deps); `:font` to draw labels and legends in an embedded typeface, `:corner_radius` for rounded bars.
 - **Flow layout** — `PrawnEx.Layout`: margin box + cursor, `vstack` / `hstack`, optional **region** + **new-page** overflow, and `PrawnEx.Layout.Markup` for a tiny line-oriented DSL (see [Flow layout](#flow-layout-prawnexlayout)); still pure PDF ops under the hood.
 - **Images** — Embed **JPEG** (`/DCTDecode`) or **PNG** (`/FlateDecode`): 8-bit RGB/RGBA, non-interlaced, path or binary; optional width/height; `image_dir` config for relative paths.
 - **Links** — External link annotations (clickable URLs).
@@ -31,7 +31,7 @@ Add the dependency and build your first PDF:
 ```elixir
 # mix.exs
 def deps do
-  [{:prawn_ex, "~> 0.4.0"}]
+  [{:prawn_ex, "~> 0.5.0"}]
 end
 ```
 
@@ -190,7 +190,7 @@ by adding `prawn_ex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:prawn_ex, "~> 0.4.0"}
+    {:prawn_ex, "~> 0.5.0"}
   ]
 end
 ```
