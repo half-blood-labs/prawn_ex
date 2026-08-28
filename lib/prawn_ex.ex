@@ -251,6 +251,15 @@ defmodule PrawnEx do
     do: PrawnEx.Shapes.rounded_rect(doc, x, y, w, h, radius)
 
   @doc """
+  Appends a closed polygon path through a list of `{x, y}` points, to be
+  painted with `fill/1`, `stroke/1`, or `fill_stroke/1`.
+
+      # a small upward triangle
+      PrawnEx.polygon(doc, [{10, 10}, {16, 20}, {4, 20}]) |> PrawnEx.fill()
+  """
+  def polygon(doc, points), do: PrawnEx.Shapes.polygon(doc, points)
+
+  @doc """
   Sets the stroke (line) width in points for subsequent stroked paths.
   """
   @spec set_line_width(Document.t(), number()) :: Document.t()

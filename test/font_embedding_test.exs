@@ -207,6 +207,25 @@ defmodule PrawnEx.FontEmbeddingTest do
       assert pdf =~ "/GS1 gs"
     end
 
+    test "polygon closes a path through its points" do
+      pdf =
+        PrawnEx.Document.new()
+        |> PrawnEx.add_page()
+        |> PrawnEx.polygon([{10, 10}, {16, 20}, {4, 20}])
+        |> PrawnEx.fill()
+        |> PrawnEx.to_binary()
+
+      assert pdf =~ "10 10 m"
+      assert pdf =~ "16 20 l"
+      assert pdf =~ "h\nf"
+    end
+
+    test "a polygon needs at least two points" do
+      doc = PrawnEx.Document.new() |> PrawnEx.add_page()
+      assert PrawnEx.polygon(doc, [{1, 1}]) == doc
+      assert PrawnEx.polygon(doc, []) == doc
+    end
+
     test "rounded_rectangle builds a Bézier path and fill_stroke paints it" do
       pdf =
         PrawnEx.Document.new()

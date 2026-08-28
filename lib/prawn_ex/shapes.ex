@@ -41,5 +41,24 @@ defmodule PrawnEx.Shapes do
     end
   end
 
+  @doc """
+  Appends a closed polygon path through `points` (a list of `{x, y}`).
+  Fewer than two points draws nothing.
+
+  Useful for the small marks a document needs but a single-byte font
+  cannot spell — arrows, carets, tick marks — since those glyphs have
+  no WinAnsi codepoint and would otherwise transliterate to `?`.
+  """
+  @spec polygon(Document.t(), [{number(), number()}]) :: Document.t()
+  def polygon(doc, points) when is_list(points) and length(points) >= 2 do
+    [first | rest] = points
+
+    rest
+    |> Enum.reduce(op(doc, {:move_to, first}), fn point, doc -> op(doc, {:line_to, point}) end)
+    |> op(:close_path)
+  end
+
+  def polygon(doc, _points), do: doc
+
   defp op(doc, operation), do: Document.append_op(doc, operation)
 end

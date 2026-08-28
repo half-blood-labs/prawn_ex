@@ -15,7 +15,7 @@ Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTM
 - **Document & pages** — Multi-page PDFs, configurable page size (A4, Letter, etc.).
 - **Text** — Set font and size (Helvetica, Times-Roman, Times-Bold, Courier, etc.), draw text at position or append to cursor.
 - **Embedded fonts** — `register_font/3` embeds a real TrueType font (`/FontFile2`, flate-compressed, WinAnsi widths from the font's own metrics), so documents can use brand typefaces instead of the base-14 stand-ins. CFF-flavoured OpenType is not supported yet.
-- **Graphics** — Lines, rectangles, rounded rectangles (Bézier corners), move-to/line-to/curve-to paths; stroke, fill, and fill-stroke.
+- **Graphics** — Lines, rectangles, rounded rectangles (Bézier corners), polygons, move-to/line-to/curve-to paths; stroke, fill, and fill-stroke.
 - **Colors & opacity** — Gray (stroking and non-stroking) and RGB; `set_opacity/2` for translucent fills and strokes (ExtGState alpha).
 - **Tables** — Grid with optional header row, configurable column widths, row height, padding, borders; **cell alignment** per column (`:left`, `:center`, `:right`).
 - **Charts** — Bar charts and line charts from data (no external deps); `:font` to draw labels and legends in an embedded typeface, `:corner_radius` for rounded bars.
