@@ -5,7 +5,7 @@ defmodule PrawnEx.MixProject do
     [
       app: :prawn_ex,
       name: "prawn_ex",
-      version: "0.3.0",
+      version: "0.4.0",
       elixir: "~> 1.16",
       description:
         "Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML.",

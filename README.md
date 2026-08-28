@@ -6,7 +6,7 @@
 [![Hex.pm](https://img.shields.io/hexpm/l/prawn_ex.svg)](https://hex.pm/packages/prawn_ex)
 [![Elixir](https://img.shields.io/badge/elixir-%3E%3D%201.16-purple)](https://elixir-lang.org)
 
-**Version** 0.3.0 · **Elixir** ~> 1.16
+**Version** 0.4.0 · **Elixir** ~> 1.16
 
 Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML: build a document spec and emit PDF 1.4.
 
@@ -14,8 +14,9 @@ Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTM
 
 - **Document & pages** — Multi-page PDFs, configurable page size (A4, Letter, etc.).
 - **Text** — Set font and size (Helvetica, Times-Roman, Times-Bold, Courier, etc.), draw text at position or append to cursor.
-- **Graphics** — Lines, rectangles, move-to/line-to paths; stroke and fill.
-- **Colors** — Gray (stroking and non-stroking) and RGB (e.g. for fill and stroke).
+- **Embedded fonts** — `register_font/3` embeds a real TrueType font (`/FontFile2`, flate-compressed, WinAnsi widths from the font's own metrics), so documents can use brand typefaces instead of the base-14 stand-ins. CFF-flavoured OpenType is not supported yet.
+- **Graphics** — Lines, rectangles, rounded rectangles (Bézier corners), move-to/line-to/curve-to paths; stroke, fill, and fill-stroke.
+- **Colors & opacity** — Gray (stroking and non-stroking) and RGB; `set_opacity/2` for translucent fills and strokes (ExtGState alpha).
 - **Tables** — Grid with optional header row, configurable column widths, row height, padding, borders; **cell alignment** per column (`:left`, `:center`, `:right`).
 - **Charts** — Bar charts and line charts from data (no external deps).
 - **Flow layout** — `PrawnEx.Layout`: margin box + cursor, `vstack` / `hstack`, optional **region** + **new-page** overflow, and `PrawnEx.Layout.Markup` for a tiny line-oriented DSL (see [Flow layout](#flow-layout-prawnexlayout)); still pure PDF ops under the hood.
@@ -30,7 +31,7 @@ Add the dependency and build your first PDF:
 ```elixir
 # mix.exs
 def deps do
-  [{:prawn_ex, "~> 0.3.0"}]
+  [{:prawn_ex, "~> 0.4.0"}]
 end
 ```
 
@@ -189,7 +190,7 @@ by adding `prawn_ex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:prawn_ex, "~> 0.3.0"}
+    {:prawn_ex, "~> 0.4.0"}
   ]
 end
 ```

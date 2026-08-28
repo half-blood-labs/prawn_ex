@@ -10,14 +10,15 @@ defmodule PrawnEx.Document do
   Images are stored in `images` (list of image specs) and referenced by 1-based index.
   """
 
-  defstruct [:opts, :pages, :images]
+  defstruct [:opts, :pages, :images, fonts: %{}]
 
   @type opts :: keyword()
 
   @type t :: %__MODULE__{
           opts: keyword(),
           pages: [PrawnEx.Page.t()],
-          images: [map()]
+          images: [map()],
+          fonts: %{optional(String.t()) => map()}
         }
 
   @doc """
@@ -48,6 +49,14 @@ defmodule PrawnEx.Document do
   def add_image(%__MODULE__{images: images} = doc, spec) do
     id = length(images) + 1
     {%{doc | images: images ++ [spec]}, id}
+  end
+
+  @doc """
+  Registers an embedded TrueType font under `name` for use with `set_font/3`.
+  """
+  @spec put_font(t(), String.t(), binary(), map()) :: t()
+  def put_font(%__MODULE__{fonts: fonts} = doc, name, data, metrics) do
+    %{doc | fonts: Map.put(fonts, name, %{data: data, metrics: metrics})}
   end
 
   @doc """

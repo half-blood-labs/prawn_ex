@@ -186,6 +186,86 @@ defmodule PrawnEx do
   def set_stroking_rgb(doc, r, g, b), do: Document.append_op(doc, {:set_stroking_rgb, r, g, b})
 
   @doc """
+  Registers a TrueType font for embedding, under `name`.
+
+  `source` is a path to a `.ttf` file or the font binary itself. After
+  registering, pass `name` to `set_font/3` like any built-in font — the
+  writer embeds the font program (flate-compressed) and real glyph
+  widths, so text renders in the actual typeface instead of a base-14
+  stand-in. Text keeps flowing through the same WinAnsi transliteration.
+
+  Raises `ArgumentError` when the data is not a usable TrueType font
+  (CFF-flavoured OpenType included — that needs /FontFile3).
+
+      doc
+      |> PrawnEx.register_font("HankenGrotesk", "priv/fonts/HankenGrotesk-Regular.ttf")
+      |> PrawnEx.set_font("HankenGrotesk", 12)
+  """
+  def register_font(doc, name, source) when is_binary(name) and is_binary(source) do
+    data =
+      if String.starts_with?(source, "\0\x01") or not File.exists?(source),
+        do: source,
+        else: File.read!(source)
+
+    case PrawnEx.Font.TrueType.parse(data) do
+      {:ok, metrics} ->
+        Document.put_font(doc, name, data, metrics)
+
+      {:error, reason} ->
+        raise ArgumentError, "could not parse TrueType font #{inspect(name)}: #{reason}"
+    end
+  end
+
+  @doc """
+  Sets fill and stroke opacity (0.0 transparent .. 1.0 opaque) for
+  subsequent drawing. Set it back to `1.0` when done — like colors,
+  it stays in effect.
+  """
+  def set_opacity(doc, alpha) when is_number(alpha) and alpha >= 0 and alpha <= 1,
+    do: Document.append_op(doc, {:set_opacity, alpha / 1})
+
+  @doc """
+  Appends a cubic Bézier curve from the current point to `{x, y}` with
+  control points `c1` and `c2`. Draw with `stroke/1` or `fill/1`.
+  """
+  def curve_to(doc, {_, _} = c1, {_, _} = c2, {_, _} = point),
+    do: Document.append_op(doc, {:curve_to, c1, c2, point})
+
+  @doc """
+  Closes the current path back to its starting point.
+  """
+  def close_path(doc), do: Document.append_op(doc, :close_path)
+
+  @doc """
+  Fills and strokes the current path in one operation — a shape with
+  both a background and a border.
+  """
+  def fill_stroke(doc), do: Document.append_op(doc, :fill_stroke)
+
+  @rounded_kappa 0.5523
+  @doc """
+  Appends a rounded-rectangle path (Bézier corners). Like
+  `rectangle/5` it only builds the path — follow with `fill/1`,
+  `stroke/1`, or `fill_stroke/1`.
+  """
+  def rounded_rectangle(doc, x, y, w, h, radius) do
+    r = min(radius, min(w, h) / 2)
+    k = @rounded_kappa * r
+
+    doc
+    |> move_to({x + r, y})
+    |> line_to({x + w - r, y})
+    |> curve_to({x + w - r + k, y}, {x + w, y + r - k}, {x + w, y + r})
+    |> line_to({x + w, y + h - r})
+    |> curve_to({x + w, y + h - r + k}, {x + w - r + k, y + h}, {x + w - r, y + h})
+    |> line_to({x + r, y + h})
+    |> curve_to({x + r - k, y + h}, {x, y + h - r + k}, {x, y + h - r})
+    |> line_to({x, y + r})
+    |> curve_to({x, y + r - k}, {x + r - k, y}, {x + r, y})
+    |> close_path()
+  end
+
+  @doc """
   Sets the stroke (line) width in points for subsequent stroked paths.
   """
   @spec set_line_width(Document.t(), number()) :: Document.t()

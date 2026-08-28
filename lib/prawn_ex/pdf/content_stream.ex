@@ -13,19 +13,42 @@ defmodule PrawnEx.PDF.ContentStream do
 
   Font name is mapped to a PDF resource name (e.g. Helvetica -> F1).
   """
-  @spec build([PrawnEx.Page.content_op()], %{String.t() => String.t()}) :: binary()
-  def build(ops, font_map \\ %{}) do
-    font_map = font_map || %{}
+  @spec build([PrawnEx.Page.content_op()], %{String.t() => String.t()}, %{number() => String.t()}) ::
+          binary()
+  def build(ops, font_map \\ %{}, gs_map \\ %{}) do
+    font_map = {font_map || %{}, gs_map || %{}}
     acc = {"", font_map}
     {stream, _} = Enum.reduce(ops, acc, &emit_op/2)
     String.trim(stream)
   end
 
-  defp emit_op({:set_font, font_name, size}, {acc, font_map}) do
+  defp emit_op({:set_font, font_name, size}, {acc, {font_map, _} = maps}) do
     name = Map.get(font_map, font_name, "F1")
     # We only emit when we actually draw text; store in state if needed. For now emit Tf.
     line = "/#{name} #{Encoder.number(size)} Tf\n"
-    {acc <> line, font_map}
+    {acc <> line, maps}
+  end
+
+  defp emit_op({:set_opacity, alpha}, {acc, {_, gs_map} = maps}) do
+    name = Map.get(gs_map, alpha, "GS1")
+    {acc <> "/#{name} gs\n", maps}
+  end
+
+  defp emit_op({:curve_to, {c1x, c1y}, {c2x, c2y}, {x, y}}, {acc, maps}) do
+    line =
+      [c1x, c1y, c2x, c2y, x, y]
+      |> Enum.map_join(" ", &Encoder.number/1)
+      |> Kernel.<>(" c\n")
+
+    {acc <> line, maps}
+  end
+
+  defp emit_op(:close_path, {acc, maps}) do
+    {acc <> "h\n", maps}
+  end
+
+  defp emit_op(:fill_stroke, {acc, maps}) do
+    {acc <> "B\n", maps}
   end
 
   defp emit_op({:text, s}, {acc, font_map}) do
