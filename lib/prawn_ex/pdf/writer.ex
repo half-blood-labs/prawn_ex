@@ -7,6 +7,7 @@ defmodule PrawnEx.PDF.Writer do
   """
 
   alias PrawnEx.Document
+  alias PrawnEx.Page
   alias PrawnEx.PDF.{ContentStream, Objects}
   alias PrawnEx.Units
 
@@ -38,7 +39,7 @@ defmodule PrawnEx.PDF.Writer do
     # font program, descriptor, font dict.
     embedded_names =
       pages
-      |> Enum.flat_map(&fonts_used_on_page(&1.content_ops || []))
+      |> Enum.flat_map(&fonts_used_on_page(Page.content_ops(&1)))
       |> Enum.uniq()
       |> Enum.filter(&Map.has_key?(fonts, &1))
       |> Enum.sort()
@@ -58,7 +59,7 @@ defmodule PrawnEx.PDF.Writer do
     alphas =
       pages
       |> Enum.flat_map(fn page ->
-        for {:set_opacity, a} <- page.content_ops || [], do: a
+        for {:set_opacity, a} <- Page.content_ops(page), do: a
       end)
       |> Enum.uniq()
       |> Enum.sort()
@@ -112,7 +113,8 @@ defmodule PrawnEx.PDF.Writer do
 
   defp image_ids_from_pages(pages) do
     Enum.flat_map(pages, fn page ->
-      page.content_ops
+      page
+      |> Page.content_ops()
       |> Enum.filter(&match?({:image, _, _, _, _, _}, &1))
       |> Enum.map(fn {:image, id, _, _, _, _} -> id end)
     end)
@@ -184,6 +186,7 @@ defmodule PrawnEx.PDF.Writer do
 
     {page_frags, all_ids, _} =
       Enum.reduce(pages, {[], [], next_id}, fn page, {acc_frags, acc_ids, next_id} ->
+        ops = Page.content_ops(page)
         content_id = next_id
         next_id = next_id + 1
 
@@ -199,7 +202,7 @@ defmodule PrawnEx.PDF.Writer do
         page_id = next_id
         next_id = next_id + 1
 
-        font_names = fonts_used_on_page(page.content_ops || [])
+        font_names = fonts_used_on_page(ops)
 
         font_map =
           font_names
@@ -217,13 +220,13 @@ defmodule PrawnEx.PDF.Writer do
           end)
 
         page_alphas =
-          for {:set_opacity, a} <- page.content_ops || [], uniq: true, do: a
+          for {:set_opacity, a} <- ops, uniq: true, do: a
 
         gs_refs = Enum.map(page_alphas, fn a -> {gs_alloc[a].name, gs_alloc[a].id} end)
         gs_map = Map.new(page_alphas, fn a -> {a, gs_alloc[a].name} end)
 
         image_ids_on_page =
-          (page.content_ops || [])
+          ops
           |> Enum.filter(&match?({:image, _, _, _, _, _}, &1))
           |> Enum.map(fn {:image, id, _, _, _, _} -> id end)
           |> Enum.uniq()
@@ -233,7 +236,7 @@ defmodule PrawnEx.PDF.Writer do
 
         resources = Objects.resources(font_entries, xobject_refs, gs_refs)
 
-        content_bin = ContentStream.build(page.content_ops || [], font_map, gs_map)
+        content_bin = ContentStream.build(ops, font_map, gs_map)
         stream_body = Objects.stream_dict_and_data(content_bin)
         stream_frag = "#{content_id} 0 obj\n#{stream_body}\nendobj\n"
 

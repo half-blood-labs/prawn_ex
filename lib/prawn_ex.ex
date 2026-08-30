@@ -433,7 +433,7 @@ defmodule PrawnEx do
 
     case Document.current_page(result) do
       nil -> []
-      page -> page.content_ops
+      page -> PrawnEx.Page.content_ops(page)
     end
   end
 end
