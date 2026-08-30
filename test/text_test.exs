@@ -6,10 +6,37 @@ defmodule PrawnEx.TextTest do
       assert PrawnEx.Text.estimated_width("", 12) == 0
     end
 
-    test "scales with font size and length" do
-      # ~0.5 pt per char per unit font size
-      assert PrawnEx.Text.estimated_width("Hi", 12) == 12.0
-      assert PrawnEx.Text.estimated_width("Hi", 24) == 24.0
+    test "sums the Helvetica advance widths" do
+      # H is 0.7222 em, i is 0.2222 em
+      assert_in_delta PrawnEx.Text.estimated_width("Hi", 12), (0.7222 + 0.2222) * 12, 1.0e-9
+    end
+
+    test "scales linearly with font size" do
+      at_12 = PrawnEx.Text.estimated_width("Hi", 12)
+
+      assert_in_delta PrawnEx.Text.estimated_width("Hi", 24), at_12 * 2, 1.0e-9
+    end
+
+    test "narrow and wide glyphs measure differently" do
+      # The flat half-em guess this replaced called these the same width.
+      assert PrawnEx.Text.estimated_width("lllll", 12) <
+               PrawnEx.Text.estimated_width("WWWWW", 12) / 3
+    end
+
+    test "counts the space between words" do
+      assert_in_delta PrawnEx.Text.estimated_width("a b", 10),
+                      PrawnEx.Text.estimated_width("ab", 10) +
+                        PrawnEx.Text.estimated_width(" ", 10),
+                      1.0e-9
+    end
+
+    test "unknown codepoints fall back to 0.55 em" do
+      # U+4E2D is outside the WinAnsi table Helvetica can show.
+      assert_in_delta PrawnEx.Text.estimated_width("中", 20), 0.55 * 20, 1.0e-9
+    end
+
+    test "measures accented Latin-1 characters" do
+      assert PrawnEx.Text.estimated_width("ü", 12) == PrawnEx.Text.estimated_width("u", 12)
     end
   end
 
@@ -34,6 +61,12 @@ defmodule PrawnEx.TextTest do
       lines = PrawnEx.Text.wrap_to_lines("A\nB", 200, 12)
       assert "A" in lines
       assert "B" in lines
+    end
+
+    test "wrapping follows real glyph widths, not character count" do
+      # Same character count, very different widths.
+      assert PrawnEx.Text.wrap_to_lines("iiiiiiiiii", 60, 12) == ["iiiiiiiiii"]
+      assert length(PrawnEx.Text.wrap_to_lines("WWWWWWWWWW", 60, 12)) > 1
     end
 
     test "single word longer than width breaks by character" do

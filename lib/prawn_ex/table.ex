@@ -157,7 +157,6 @@ defmodule PrawnEx.Table do
     doc
   end
 
-  # Approximate text width for Helvetica: ~0.5 pt per unit of font size per character
   defp text_x_for_align(cell_x, _col_w, padding, _font_size, _text, :left) do
     cell_x + padding
   end
@@ -173,7 +172,6 @@ defmodule PrawnEx.Table do
   end
 
   defp estimated_text_width(text, font_size) when is_binary(text) do
-    # Helvetica-like: ~0.5 pt per character per unit font size
-    String.length(text) * font_size * 0.5
+    PrawnEx.Text.estimated_width(text, font_size)
   end
 end
