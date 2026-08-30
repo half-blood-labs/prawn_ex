@@ -20,6 +20,10 @@ defmodule PrawnEx.Page do
   - `{:set_non_stroking_rgb, r, g, b}` (fill and text, 0..1)
   - `{:set_stroking_rgb, r, g, b}` (lines and strokes, 0..1)
   - `{:image, image_id, x, y, width, height}` (draw image XObject)
+  - `:save_state`, `:restore_state` (push/pop the graphics state)
+  - `{:concat_matrix, a, b, c, d, e, f}` (concatenate a transformation matrix)
+  - `{:set_dash, array, phase}` (dash pattern; `[]` is solid)
+  - `{:set_line_cap, n}`, `{:set_line_join, n}` (`n` in 0..2)
   """
 
   defstruct [:ops_rev, :annotations]
@@ -39,6 +43,12 @@ defmodule PrawnEx.Page do
           | {:set_non_stroking_rgb, number(), number(), number()}
           | {:set_stroking_rgb, number(), number(), number()}
           | {:image, pos_integer(), number(), number(), number(), number()}
+          | :save_state
+          | :restore_state
+          | {:concat_matrix, number(), number(), number(), number(), number(), number()}
+          | {:set_dash, [number()], number()}
+          | {:set_line_cap, 0..2}
+          | {:set_line_join, 0..2}
 
   @type t :: %__MODULE__{ops_rev: [content_op()], annotations: [map()]}
 

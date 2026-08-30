@@ -3,7 +3,8 @@ defmodule PrawnEx.PDF.ContentStream do
   Builds PDF content stream bytes from a list of content operations.
 
   Uses PDF graphics operators: BT/ET (text), Tm/Tf/Tj (position, font, show),
-  m/l/re (path), S/f (stroke/fill), q/Q (save/restore state).
+  m/l/re (path), S/f (stroke/fill), q/Q (save/restore state), cm (transform),
+  d/J/j (dash, line cap, line join).
   """
 
   alias PrawnEx.PDF.Encoder
@@ -41,6 +42,36 @@ defmodule PrawnEx.PDF.ContentStream do
       |> Kernel.<>(" c\n")
 
     {acc <> line, maps}
+  end
+
+  defp emit_op(:save_state, {acc, maps}) do
+    {acc <> "q\n", maps}
+  end
+
+  defp emit_op(:restore_state, {acc, maps}) do
+    {acc <> "Q\n", maps}
+  end
+
+  defp emit_op({:concat_matrix, a, b, c, d, e, f}, {acc, maps}) do
+    line =
+      [a, b, c, d, e, f]
+      |> Enum.map_join(" ", &Encoder.number/1)
+      |> Kernel.<>(" cm\n")
+
+    {acc <> line, maps}
+  end
+
+  defp emit_op({:set_dash, array, phase}, {acc, maps}) do
+    pattern = Enum.map_join(array, " ", &Encoder.number/1)
+    {acc <> "[" <> pattern <> "] " <> Encoder.number(phase) <> " d\n", maps}
+  end
+
+  defp emit_op({:set_line_cap, n}, {acc, maps}) do
+    {acc <> Encoder.number(n) <> " J\n", maps}
+  end
+
+  defp emit_op({:set_line_join, n}, {acc, maps}) do
+    {acc <> Encoder.number(n) <> " j\n", maps}
   end
 
   defp emit_op(:close_path, {acc, maps}) do
