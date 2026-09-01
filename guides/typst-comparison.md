@@ -108,7 +108,7 @@ height, and a table taller than the page broke to a new page once and
 then ran off the bottom of it. Both were real layout bugs, both are
 fixed (paragraphs advance a full line before the gap; tables paginate
 by rows with the header repeated on every page), and both fixes
-shipped in 0.5.0 with tests pinning them. A layout engine you own is
+shipped in 0.6.0 with tests pinning them. A layout engine you own is
 a layout engine you debug — that is the honest cost of this library's
 approach, and the flip side of the three advantages above.
 
