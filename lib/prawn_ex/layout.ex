@@ -189,7 +189,13 @@ defmodule PrawnEx.Layout do
         )
 
       last_baseline = l.cursor_y - (n - 1) * line_height
-      %{l | doc: doc, cursor_y: last_baseline - gap_after}
+
+      # The next block's first baseline needs a full line of clearance
+      # below this paragraph's last baseline — gap_after is whitespace
+      # on top of that, not instead of it. Ending at
+      # last_baseline - gap_after made stacked paragraphs overlap
+      # whenever gap_after < line_height.
+      %{l | doc: doc, cursor_y: last_baseline - line_height - gap_after}
     end
   end
 
@@ -249,13 +255,68 @@ defmodule PrawnEx.Layout do
     clearance = Keyword.get(opts, :clearance, 20)
     after_gap = Keyword.get(opts, :after_gap, 12)
     row_height = Keyword.get(opts, :row_height, 24)
+    header? = Keyword.get(opts, :header, true)
 
-    n_rows = length(rows)
-    table_height = n_rows * row_height
+    {header_row, body} =
+      if header? and rows != [], do: {hd(rows), tl(rows)}, else: {nil, rows}
+
+    if is_nil(l.region_floor_y) or l.on_overflow == :clip do
+      draw_table_chunk(l, rows, opts, clearance, after_gap, row_height)
+    else
+      paginate_table(l, header_row, body, opts, clearance, after_gap, row_height)
+    end
+  end
+
+  # A table taller than the page splits by rows, and every continuation
+  # page repeats the header — a ledger page without column names is a
+  # puzzle, not a report.
+  defp paginate_table(l, header_row, body, opts, clearance, after_gap, row_height) do
+    header_rows = if header_row, do: 1, else: 0
+
+    available = l.cursor_y - clearance - l.region_floor_y
+    fit = trunc(available / row_height) - header_rows
+
+    cond do
+      body == [] ->
+        rows = if header_row, do: [header_row], else: []
+        draw_table_chunk(l, rows, opts, clearance, after_gap, row_height)
+
+      fit >= length(body) ->
+        rows = if header_row, do: [header_row | body], else: body
+        draw_table_chunk(l, rows, opts, clearance, after_gap, row_height)
+
+      fit < 1 ->
+        paginate_table(
+          new_page_reset(l),
+          header_row,
+          body,
+          opts,
+          clearance,
+          after_gap,
+          row_height
+        )
+
+      true ->
+        {chunk, rest} = Enum.split(body, fit)
+        rows = if header_row, do: [header_row | chunk], else: chunk
+        l = draw_table_chunk(l, rows, opts, clearance, 0, row_height)
+
+        paginate_table(
+          new_page_reset(l),
+          header_row,
+          rest,
+          opts,
+          clearance,
+          after_gap,
+          row_height
+        )
+    end
+  end
+
+  defp draw_table_chunk(l, rows, opts, clearance, after_gap, row_height) do
+    table_height = length(rows) * row_height
     at_y = l.cursor_y - clearance
-    lowest = at_y - table_height
-    l = maybe_break_for_extent(l, lowest)
-
+    l = maybe_break_for_extent(l, at_y - table_height)
     at_y = l.cursor_y - clearance
 
     opts =
