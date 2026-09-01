@@ -33,3 +33,7 @@ prawn_ex-*.tar
 
 .DS_Store
 .elixir_ls/
+/bench/_build/
+/bench/deps/
+/bench/*.pdf
+/bench/mix.lock

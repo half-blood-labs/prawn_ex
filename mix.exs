@@ -18,6 +18,9 @@ defmodule PrawnEx.MixProject do
 
   defp package do
     [
+      # Hex's default file set has no idea about guides/; without this
+      # the comparison page would 404 on hexdocs.
+      files: ~w(lib guides mix.exs README.md LICENSE*),
       licenses: ["MIT"],
       links: %{
         "HexDocs" => "https://hexdocs.pm/prawn_ex",
@@ -39,7 +42,7 @@ defmodule PrawnEx.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: ["README.md", "guides/typst-comparison.md"],
       source_url: "https://github.com/half-blood-labs/prawn_ex"
     ]
   end

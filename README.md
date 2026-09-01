@@ -10,6 +10,11 @@
 
 Prawn-style declarative PDF generation for Elixir. Pure Elixir, no Chrome or HTML: build a document spec and emit PDF 1.4.
 
+> **Choosing a PDF library?** There is an honest, measured comparison
+> against the Typst-based options (imprintor, folio) in
+> [guides/typst-comparison.md](guides/typst-comparison.md) — including
+> the cases where they are the better choice.
+
 ## Features
 
 - **Document & pages** — Multi-page PDFs, configurable page size (A4, Letter, etc.).
