@@ -18,7 +18,7 @@ defmodule PrawnEx.DocumentTest do
     test "adds one page" do
       doc = PrawnEx.Document.new() |> PrawnEx.Document.add_page()
       assert length(doc.pages) == 1
-      assert hd(doc.pages).content_ops == []
+      assert PrawnEx.Page.content_ops(hd(doc.pages)) == []
     end
 
     test "add_page twice adds two pages" do
@@ -35,7 +35,7 @@ defmodule PrawnEx.DocumentTest do
     test "adds a page if none and appends op" do
       doc = PrawnEx.Document.new() |> PrawnEx.Document.append_op({:text, "Hi"})
       assert length(doc.pages) == 1
-      assert hd(doc.pages).content_ops == [{:text, "Hi"}]
+      assert PrawnEx.Page.content_ops(hd(doc.pages)) == [{:text, "Hi"}]
     end
 
     test "appends to current page" do
@@ -47,7 +47,7 @@ defmodule PrawnEx.DocumentTest do
 
       assert length(doc.pages) == 1
 
-      assert hd(doc.pages).content_ops == [
+      assert PrawnEx.Page.content_ops(hd(doc.pages)) == [
                {:set_font, "Helvetica", 12},
                {:text, "Hello"}
              ]

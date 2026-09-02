@@ -267,6 +267,122 @@ defmodule PrawnEx do
     do: Document.append_op(doc, {:set_line_width, width})
 
   @doc """
+  Saves the current graphics state (`q`): colors, line width, dash pattern,
+  line cap and join, and the current transformation matrix.
+
+  Pair every call with `restore_state/1` — an unbalanced `q` leaves the
+  state stack dirty for the rest of the page.
+  """
+  @spec save_state(Document.t()) :: Document.t()
+  def save_state(doc), do: Document.append_op(doc, :save_state)
+
+  @doc """
+  Restores the graphics state saved by the matching `save_state/1` (`Q`).
+  """
+  @spec restore_state(Document.t()) :: Document.t()
+  def restore_state(doc), do: Document.append_op(doc, :restore_state)
+
+  @doc """
+  Concatenates the matrix `[a b c d e f]` onto the current transformation
+  matrix (`cm`). A point `{x, y}` drawn afterwards lands at
+  `{a * x + c * y + e, b * x + d * y + f}`.
+
+  The transform stays in effect for the rest of the page, so bracket it with
+  `save_state/1` and `restore_state/1`.
+
+      # draw a box at twice the size, anchored at the origin
+      doc
+      |> PrawnEx.save_state()
+      |> PrawnEx.concat_matrix(2, 0, 0, 2, 0, 0)
+      |> PrawnEx.rectangle(10, 10, 20, 20)
+      |> PrawnEx.stroke()
+      |> PrawnEx.restore_state()
+  """
+  @spec concat_matrix(Document.t(), number(), number(), number(), number(), number(), number()) ::
+          Document.t()
+  def concat_matrix(doc, a, b, c, d, e, f)
+      when is_number(a) and is_number(b) and is_number(c) and is_number(d) and is_number(e) and
+             is_number(f),
+      do: Document.append_op(doc, {:concat_matrix, a, b, c, d, e, f})
+
+  @doc """
+  Shifts the coordinate system by `x` and `y` points — everything drawn
+  afterwards is offset by that much. Convenience for `concat_matrix/7`.
+  """
+  @spec translate(Document.t(), number(), number()) :: Document.t()
+  def translate(doc, x, y) when is_number(x) and is_number(y),
+    do: concat_matrix(doc, 1, 0, 0, 1, x, y)
+
+  @doc """
+  Rotates the coordinate system by `degrees`.
+
+  Positive values turn counter-clockwise, following the PDF convention of an
+  origin at the bottom-left with `y` growing upwards.
+
+  Options:
+  - `:about` - `{x, y}` pivot to rotate around (default: the origin `{0, 0}`)
+
+  The pivot is folded into a single `cm` matrix — no separate translate ops.
+
+      # a y-axis title, reading bottom-to-top, pivoting on its own baseline
+      doc
+      |> PrawnEx.save_state()
+      |> PrawnEx.rotate(90, about: {40, 400})
+      |> PrawnEx.text_at({40, 400}, "Revenue")
+      |> PrawnEx.restore_state()
+  """
+  @spec rotate(Document.t(), number(), keyword()) :: Document.t()
+  def rotate(doc, degrees, opts \\ []) when is_number(degrees) do
+    {px, py} = Keyword.get(opts, :about, {0, 0})
+    radians = degrees * :math.pi() / 180
+    cos = :math.cos(radians)
+    sin = :math.sin(radians)
+
+    # translate(px, py) . rotate(theta) . translate(-px, -py), pre-multiplied.
+    concat_matrix(
+      doc,
+      tidy(cos),
+      tidy(sin),
+      tidy(-sin),
+      tidy(cos),
+      tidy(px - px * cos + py * sin),
+      tidy(py - px * sin - py * cos)
+    )
+  end
+
+  # Trigonometry hands back 6.1e-17 where a flat 0 belongs; round that away
+  # (well below the four decimals the content stream emits, so no precision is
+  # lost) and add 0.0 to fold -0.0 back to 0.0, so the matrix reads cleanly.
+  defp tidy(value), do: Float.round(value * 1.0, 10) + 0.0
+
+  @doc """
+  Sets the dash pattern for subsequent stroked paths (`d`).
+
+  `array` is a list of on/off run lengths in points; `phase` is how far into
+  the pattern to start. An empty array resets to a solid line.
+
+      PrawnEx.set_dash(doc, [3, 3])     # 3 pt on, 3 pt off — a gridline
+      PrawnEx.set_dash(doc, [])         # back to solid
+  """
+  @spec set_dash(Document.t(), [number()], number()) :: Document.t()
+  def set_dash(doc, array, phase \\ 0) when is_list(array) and is_number(phase),
+    do: Document.append_op(doc, {:set_dash, array, phase})
+
+  @doc """
+  Sets the line cap style (`J`): `0` butt, `1` round, `2` projecting square.
+  """
+  @spec set_line_cap(Document.t(), 0..2) :: Document.t()
+  def set_line_cap(doc, style) when style in 0..2,
+    do: Document.append_op(doc, {:set_line_cap, style})
+
+  @doc """
+  Sets the line join style (`j`): `0` miter, `1` round, `2` bevel.
+  """
+  @spec set_line_join(Document.t(), 0..2) :: Document.t()
+  def set_line_join(doc, style) when style in 0..2,
+    do: Document.append_op(doc, {:set_line_join, style})
+
+  @doc """
   Adds an external link annotation on the current page. Clicking the rectangle opens the URL.
   `x`, `y` are bottom-left in pt; `width` and `height` define the clickable area.
   """
@@ -433,7 +549,7 @@ defmodule PrawnEx do
 
     case Document.current_page(result) do
       nil -> []
-      page -> page.content_ops
+      page -> PrawnEx.Page.content_ops(page)
     end
   end
 end

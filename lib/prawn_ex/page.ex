@@ -2,7 +2,11 @@ defmodule PrawnEx.Page do
   @moduledoc """
   Represents a single PDF page with a list of content operations.
 
-  Content ops are stored in order and emitted by the PDF writer.
+  Ops are appended one at a time and emitted by the PDF writer in the order
+  they were added. Internally they are kept reversed (`:ops_rev`) so appending
+  stays O(1) — a chart page can emit thousands of ops. Read them back with
+  `content_ops/1`, never off the struct field.
+
   Supported ops:
   - `{:set_font, font_name, size}`
   - `{:text, string}`
@@ -16,9 +20,13 @@ defmodule PrawnEx.Page do
   - `{:set_non_stroking_rgb, r, g, b}` (fill and text, 0..1)
   - `{:set_stroking_rgb, r, g, b}` (lines and strokes, 0..1)
   - `{:image, image_id, x, y, width, height}` (draw image XObject)
+  - `:save_state`, `:restore_state` (push/pop the graphics state)
+  - `{:concat_matrix, a, b, c, d, e, f}` (concatenate a transformation matrix)
+  - `{:set_dash, array, phase}` (dash pattern; `[]` is solid)
+  - `{:set_line_cap, n}`, `{:set_line_join, n}` (`n` in 0..2)
   """
 
-  defstruct [:content_ops, :annotations]
+  defstruct [:ops_rev, :annotations]
 
   @type content_op ::
           {:set_font, String.t(), number()}
@@ -35,23 +43,44 @@ defmodule PrawnEx.Page do
           | {:set_non_stroking_rgb, number(), number(), number()}
           | {:set_stroking_rgb, number(), number(), number()}
           | {:image, pos_integer(), number(), number(), number(), number()}
+          | :save_state
+          | :restore_state
+          | {:concat_matrix, number(), number(), number(), number(), number(), number()}
+          | {:set_dash, [number()], number()}
+          | {:set_line_cap, 0..2}
+          | {:set_line_join, 0..2}
 
-  @type t :: %__MODULE__{content_ops: [content_op()], annotations: [map()]}
+  @type t :: %__MODULE__{ops_rev: [content_op()], annotations: [map()]}
 
   @doc """
   Creates a new empty page.
   """
   @spec new() :: t()
   def new do
-    %__MODULE__{content_ops: [], annotations: []}
+    %__MODULE__{ops_rev: [], annotations: []}
   end
 
   @doc """
   Appends a content operation to the page. Returns a new Page (immutable).
   """
   @spec add_op(t(), content_op()) :: t()
-  def add_op(%__MODULE__{content_ops: ops} = page, op) do
-    %{page | content_ops: ops ++ [op]}
+  def add_op(%__MODULE__{ops_rev: ops_rev} = page, op) do
+    %{page | ops_rev: [op | ops_rev]}
+  end
+
+  @doc """
+  The page's content ops, in the order they were added.
+  """
+  @spec content_ops(t()) :: [content_op()]
+  def content_ops(%__MODULE__{ops_rev: nil}), do: []
+  def content_ops(%__MODULE__{ops_rev: ops_rev}), do: Enum.reverse(ops_rev)
+
+  @doc """
+  Replaces the page's content ops with `ops`, given in draw order.
+  """
+  @spec put_content_ops(t(), [content_op()]) :: t()
+  def put_content_ops(%__MODULE__{} = page, ops) when is_list(ops) do
+    %{page | ops_rev: Enum.reverse(ops)}
   end
 
   @doc """
